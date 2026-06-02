@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchLiveRates, fetchSingleRate, isRatesStale } from '../lib/exchangeRates'
+import { getAllAssetTypes } from '../lib/format'
 
 function toIDR(holding, exchangeRates) {
   const rate = holding.currency === 'IDR' ? 1 : (exchangeRates?.[holding.currency] || 0)
@@ -148,6 +149,10 @@ export function usePortfolio(user) {
   }, [addCurrencyRate])
 
   const derived = useMemo(() => {
+    // Build a lookup from ALL types (built-in + custom) for label/color resolution
+    const allTypes = getAllAssetTypes(settings.custom_asset_types || [])
+    const typeLookup = Object.fromEntries(allTypes.map(t => [t.key, t]))
+
     let netWorth = 0, gainLoss = 0, costBasisTotal = 0
     const allocationByType = {}
     const holdingsWithCalc = holdings.map(h => {
@@ -156,11 +161,18 @@ export function usePortfolio(user) {
       gainLoss += calc.gainLoss
       costBasisTotal += calc.costBasis
       allocationByType[h.asset_type] = (allocationByType[h.asset_type] || 0) + calc.currentValue
-      return { ...h, ...calc }
+      const typeInfo = typeLookup[h.asset_type] || {}
+      return {
+        ...h,
+        ...calc,
+        typeLabel: typeInfo.label || h.asset_type,
+        typeColor: typeInfo.color,
+      }
     })
     const gainLossPct = costBasisTotal > 0 ? (gainLoss / costBasisTotal) * 100 : 0
     return { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc }
-  }, [holdings, JSON.stringify(exchangeRates)])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdings, JSON.stringify(exchangeRates), JSON.stringify(settings.custom_asset_types)])
 
   const { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc } = derived
 

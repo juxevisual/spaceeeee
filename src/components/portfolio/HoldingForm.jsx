@@ -11,12 +11,12 @@ const TYPE_THRESHOLD = 9
 const TYPE_SHOW = 6
 
 const QUANTITY_STEP = {
-  reksa_dana: '0.0001',
-  saham: '1',
-  emas: '0.0001',
-  crypto: '0.00000001',
-  deposito: '1000',
-  cash: '1000',
+  reksa_dana: 'any',
+  saham: 'any',
+  emas: 'any',
+  crypto: 'any',
+  deposito: 'any',
+  cash: 'any',
   lainnya: 'any',
 }
 
@@ -304,6 +304,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                 </label>
                 <NumberInput
                   id="hf-cost-basis"
+                  allowDecimal
                   className={inputClass('cost_basis_value')}
                   placeholder="1.000.000"
                   value={form.cost_basis_value}
@@ -325,6 +326,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                   </label>
                   <NumberInput
                     id="hf-cost-basis"
+                    allowDecimal
                     className={inputClass('cost_basis_value')}
                     placeholder="0"
                     value={form.cost_basis_value}
@@ -348,6 +350,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                   </label>
                   <NumberInput
                     id="hf-current-value"
+                    allowDecimal
                     className={inputClass('current_value_input')}
                     placeholder="0"
                     value={form.current_value_input}

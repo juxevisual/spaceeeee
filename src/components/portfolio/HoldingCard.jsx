@@ -6,7 +6,9 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
   const [confirming, setConfirming] = useState(false)
 
   const isGain = holding.gainLoss >= 0
-  const typeColor = ASSET_TYPE_COLORS_MAP[holding.asset_type]
+  // Use pre-resolved typeLabel/typeColor from hook (supports custom types)
+  const typeColor = holding.typeColor || ASSET_TYPE_COLORS_MAP[holding.asset_type]
+  const typeLabel = holding.typeLabel || ASSET_TYPE_LABELS[holding.asset_type] || holding.asset_type
   const typeBadgeStyle = typeColor ? {
     backgroundColor: typeColor.replace(')', ' / 0.10)'),
     color: typeColor,
@@ -33,7 +35,7 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
                   className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md uppercase tracking-[0.06em] transition-colors duration-200"
                   style={typeBadgeStyle}
                 >
-                  {ASSET_TYPE_LABELS[holding.asset_type] || holding.asset_type}
+                  {typeLabel}
                 </span>
                 {holding.currency && holding.currency !== 'IDR' && (
                   <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">

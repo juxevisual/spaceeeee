@@ -97,12 +97,9 @@ export function ExpenseDashboard({ user }) {
 
   const handleSubmit = async (data) => {
     setFormLoading(true)
-    if (editTarget) {
-      await updateExpense(editTarget.id, data)
-    } else {
-      await addExpense(data)
-    }
+    const result = editTarget ? await updateExpense(editTarget.id, data) : await addExpense(data)
     setFormLoading(false)
+    if (result?.error) return result  // keep form open on error
     setFormOpen(false)
     setEditTarget(null)
   }
@@ -170,6 +167,7 @@ export function ExpenseDashboard({ user }) {
           onEdit={handleEdit}
           onDelete={deleteExpense}
           loading={loading}
+          customCategories={customCategories}
         />
       )}
 

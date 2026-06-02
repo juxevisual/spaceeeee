@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { AllocationChart } from './AllocationChart'
 import { PortfolioChart } from './PortfolioChart'
 import { PlatformSection } from './PlatformSection'
 import { HoldingForm } from './HoldingForm'
-import { formatCompact, formatRelativeTime } from '../../lib/format'
+import { HoldingsControls } from './HoldingsControls'
+import { formatCompact, formatRelativeTime, ASSET_TYPE_LABELS } from '../../lib/format'
 import { useCountUp } from '../../hooks/useCountUp'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 
@@ -80,18 +81,100 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
 
   const handleSubmit = async (data) => {
     setFormLoading(true)
-    if (editTarget) {
-      await onEdit(editTarget.id, data)
-    } else {
-      await onAdd(data)
-    }
+    const result = editTarget ? await onEdit(editTarget.id, data) : await onAdd(data)
     setFormLoading(false)
+    if (result?.error) return result  // keep form open on error
     setFormOpen(false)
     setEditTarget(null)
   }
 
   const isGain = gainLoss >= 0
-  const platforms = Object.keys(platformGroups).sort()
+
+  // Search / filter / sort state
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('value-desc')
+  const [filterTypes, setFilterTypes] = useState([])
+  const [filterPlatforms, setFilterPlatforms] = useState([])
+  const [filterCurrencies, setFilterCurrencies] = useState([])
+
+  // Available filter options (from all holdings, not filtered)
+  const availableTypes = useMemo(() => [...new Set(holdings.map(h => h.asset_type))], [holdings])
+  const availablePlatforms = useMemo(() => [...new Set(holdings.map(h => h.platform))].sort(), [holdings])
+  const availableCurrencies = useMemo(() => [...new Set(holdings.map(h => h.currency))].sort(), [holdings])
+
+  // Filtered + sorted holdings
+  const filteredSortedHoldings = useMemo(() => {
+    let result = [...holdings]
+    const q = search.trim().toLowerCase()
+    if (q) result = result.filter(h => h.asset_name.toLowerCase().includes(q) || h.platform.toLowerCase().includes(q))
+    if (filterTypes.length) result = result.filter(h => filterTypes.includes(h.asset_type))
+    if (filterPlatforms.length) result = result.filter(h => filterPlatforms.includes(h.platform))
+    if (filterCurrencies.length) result = result.filter(h => filterCurrencies.includes(h.currency))
+    return result.sort((a, b) => {
+      switch (sortBy) {
+        case 'value-asc':  return a.currentValue - b.currentValue
+        case 'gain-desc':  return b.gainLossPct - a.gainLossPct
+        case 'gain-asc':   return a.gainLossPct - b.gainLossPct
+        case 'name-asc':   return a.asset_name.localeCompare(b.asset_name)
+        case 'updated':    return new Date(b.last_updated) - new Date(a.last_updated)
+        default:           return b.currentValue - a.currentValue // value-desc
+      }
+    })
+  }, [holdings, search, sortBy, filterTypes, filterPlatforms, filterCurrencies])
+
+  // Platform groups from filtered/sorted results, sorted by total value desc
+  const filteredPlatformGroups = useMemo(() =>
+    filteredSortedHoldings.reduce((acc, h) => {
+      if (!acc[h.platform]) acc[h.platform] = []
+      acc[h.platform].push(h)
+      return acc
+    }, {}),
+    [filteredSortedHoldings]
+  )
+
+  const sortedPlatforms = useMemo(() =>
+    Object.keys(filteredPlatformGroups).sort((a, b) => {
+      const ag = filteredPlatformGroups[a]
+      const bg = filteredPlatformGroups[b]
+      switch (sortBy) {
+        case 'value-asc': {
+          const aT = ag.reduce((s, h) => s + h.currentValue, 0)
+          const bT = bg.reduce((s, h) => s + h.currentValue, 0)
+          return aT - bT
+        }
+        case 'gain-desc': {
+          const aAvg = ag.reduce((s, h) => s + h.gainLossPct, 0) / ag.length
+          const bAvg = bg.reduce((s, h) => s + h.gainLossPct, 0) / bg.length
+          return bAvg - aAvg
+        }
+        case 'gain-asc': {
+          const aAvg = ag.reduce((s, h) => s + h.gainLossPct, 0) / ag.length
+          const bAvg = bg.reduce((s, h) => s + h.gainLossPct, 0) / bg.length
+          return aAvg - bAvg
+        }
+        case 'name-asc':
+          return a.localeCompare(b)
+        case 'updated': {
+          const aMax = Math.max(...ag.map(h => new Date(h.last_updated).getTime()))
+          const bMax = Math.max(...bg.map(h => new Date(h.last_updated).getTime()))
+          return bMax - aMax
+        }
+        default: { // value-desc
+          const aT = ag.reduce((s, h) => s + h.currentValue, 0)
+          const bT = bg.reduce((s, h) => s + h.currentValue, 0)
+          return bT - aT
+        }
+      }
+    }),
+    [filteredPlatformGroups, sortBy]
+  )
+
+  // Auto-expand sections only when search or filters are active
+  const forceExpand = !!(search || filterTypes.length || filterPlatforms.length || filterCurrencies.length)
+
+  const hasActiveControls = !!(search || filterTypes.length || filterPlatforms.length || filterCurrencies.length)
+  const clearFilters = () => { setSearch(''); setFilterTypes([]); setFilterPlatforms([]); setFilterCurrencies([]) }
+
   const animatedNetWorth = useCountUp(loading ? 0 : netWorth, 750)
   const animatedGainLoss = useCountUp(loading ? 0 : Math.abs(gainLoss), 750)
 
@@ -139,9 +222,9 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                     <span className="opacity-40">·</span>
                     {isGain ? '+' : 'âˆ’'}{Math.abs(gainLossPct).toFixed(2)}%
                   </span>
-                  {platforms.length > 0 && (
+                  {availablePlatforms.length > 0 && (
                     <p className="text-xs text-surface-400 dark:text-surface-500 mt-3">
-                      {platforms.length} platform{platforms.length !== 1 ? 's' : ''} · {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
+                      {availablePlatforms.length} platform{availablePlatforms.length !== 1 ? 's' : ''} · {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
                     </p>
                   )}
                   <ExchangeRatesPanel
@@ -201,7 +284,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
 
         {/* â”€â”€ Right column: holdings â”€â”€ */}
         <div ref={holdingsRef}>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Holdings</h2>
             <button
               onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
@@ -222,7 +305,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                 <div key={i} className="animate-pulse h-16 rounded-2xl bg-surface-100 dark:bg-surface-800" />
               ))}
             </div>
-          ) : platforms.length === 0 ? (
+          ) : holdings.length === 0 ? (
             <div className="py-16 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
               <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">No holdings yet</p>
               <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Add your first holding to get started</p>
@@ -234,19 +317,43 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {platforms.map((platform, i) => (
-                <PlatformSection
-                  key={platform}
-                  index={i}
-                  platform={platform}
-                  holdings={platformGroups[platform]}
-                  onEdit={handleEdit}
-                  onDelete={onDelete}
-                  onAddForPlatform={handleAddForPlatform}
-                />
-              ))}
-            </div>
+            <>
+              <HoldingsControls
+                search={search} onSearch={setSearch}
+                sortBy={sortBy} onSort={setSortBy}
+                filterTypes={filterTypes} onFilterTypes={setFilterTypes}
+                filterPlatforms={filterPlatforms} onFilterPlatforms={setFilterPlatforms}
+                filterCurrencies={filterCurrencies} onFilterCurrencies={setFilterCurrencies}
+                availableTypes={availableTypes}
+                availablePlatforms={availablePlatforms}
+                availableCurrencies={availableCurrencies}
+                totalCount={holdings.length}
+                filteredCount={filteredSortedHoldings.length}
+              />
+              {sortedPlatforms.length === 0 ? (
+                <div className="py-10 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
+                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">No holdings match</p>
+                  <button onClick={clearFilters} className="mt-3 text-xs font-semibold text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sortedPlatforms.map((platform, i) => (
+                    <PlatformSection
+                      key={platform}
+                      index={i}
+                      platform={platform}
+                      holdings={filteredPlatformGroups[platform]}
+                      onEdit={handleEdit}
+                      onDelete={onDelete}
+                      onAddForPlatform={handleAddForPlatform}
+                      forceOpen={forceExpand}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -47,7 +47,10 @@ export function NumberInput({
     const cursorBefore = el.selectionStart
     const typed = el.value
 
-    // Count how many digit characters were before the cursor
+    // Detect if the user just typed a comma (decimal separator)
+    const justTypedComma = allowDecimal && cursorBefore > 0 && typed[cursorBefore - 1] === ','
+
+    // Count digit characters before the cursor
     const digitsBeforeCursor = typed.slice(0, cursorBefore).replace(/[^0-9]/g, '').length
 
     // Convert display → raw → back to display
@@ -70,6 +73,12 @@ export function NumberInput({
       }
       if (digitsBeforeCursor === 0) pos = 0
       else if (digits < digitsBeforeCursor) pos = formatted.length
+
+      // If the user just typed a comma, advance past it in the formatted string
+      if (justTypedComma && pos < formatted.length && formatted[pos] === ',') {
+        pos++
+      }
+
       ref.current.setSelectionRange(pos, pos)
     })
   }

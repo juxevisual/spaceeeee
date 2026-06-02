@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HoldingCard } from './HoldingCard'
 import { formatCompact } from '../../lib/format'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
@@ -22,8 +22,13 @@ function getPlatformColor(platform) {
   return colorMap[platform]
 }
 
-export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddForPlatform, index = 0 }) {
-  const [open, setOpen] = useState(true)
+export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddForPlatform, index = 0, forceOpen = false }) {
+  const [open, setOpen] = useState(false)
+
+  // Auto-expand when a search makes this section relevant
+  useEffect(() => {
+    if (forceOpen) setOpen(true)
+  }, [forceOpen])
   const total = holdings.reduce((sum, h) => sum + h.currentValue, 0)
   const color = getPlatformColor(platform)
   const initial = platform[0]?.toUpperCase() || '?'

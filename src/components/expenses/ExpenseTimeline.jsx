@@ -1,12 +1,13 @@
 ﻿import { useState } from 'react'
-import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS } from '../../lib/format'
+import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS, getAllCategories } from '../../lib/format'
 
-function EntryRow({ entry, onEdit, onDelete }) {
+function EntryRow({ entry, onEdit, onDelete, categoryLookup = {} }) {
   const [confirming, setConfirming] = useState(false)
+  const catInfo = categoryLookup[entry.category] || {}
   const label = entry.category === 'lainnya' && entry.custom_label
     ? entry.custom_label
-    : CATEGORY_LABELS[entry.category] || entry.category
-  const dot = CATEGORY_COLORS[entry.category] || 'oklch(0.55 0.08 60)'
+    : catInfo.label || CATEGORY_LABELS[entry.category] || entry.category
+  const dot = catInfo.color || CATEGORY_COLORS[entry.category] || 'oklch(0.55 0.08 60)'
 
   return (
     <div className="flex items-start gap-3 py-3 group">
@@ -73,7 +74,7 @@ function EntryRow({ entry, onEdit, onDelete }) {
   )
 }
 
-export function CategorySummaryBar({ byCategory, total }) {
+export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
   const entries = Object.entries(byCategory)
     .filter(([, v]) => v > 0)
     .sort(([, a], [, b]) => b - a)
@@ -84,13 +85,15 @@ export function CategorySummaryBar({ byCategory, total }) {
     <div className="space-y-2.5">
       {entries.map(([cat, amount]) => {
         const pct = total > 0 ? (amount / total) * 100 : 0
-        const dot = CATEGORY_COLORS[cat] || 'oklch(0.55 0.08 60)'
+        const catInfo = categoryLookup[cat] || {}
+        const dot = catInfo.color || CATEGORY_COLORS[cat] || 'oklch(0.55 0.08 60)'
+        const catLabel = catInfo.label || CATEGORY_LABELS[cat] || cat
         return (
           <div key={cat}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: dot }} />
-                <span className="text-xs text-surface-600 dark:text-surface-400">{CATEGORY_LABELS[cat]}</span>
+                <span className="text-xs text-surface-600 dark:text-surface-400">{catLabel}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-surface-400 dark:text-surface-500 tabular-nums">{pct.toFixed(0)}%</span>
@@ -110,7 +113,10 @@ export function CategorySummaryBar({ byCategory, total }) {
   )
 }
 
-export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, onDelete, loading }) {
+export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, onDelete, loading, customCategories = [] }) {
+  const categoryLookup = Object.fromEntries(
+    getAllCategories(customCategories).map(c => [c.key, c])
+  )
   if (loading) {
     return (
       <div className="space-y-3" aria-busy="true" aria-label="Loading expenses">
@@ -138,13 +144,13 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
           <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">By category</p>
           <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums">{formatIDR(monthlyTotal)}</p>
         </div>
-        <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} />
+        <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} categoryLookup={categoryLookup} />
       </div>
 
       {/* Timeline */}
       <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
         {expenses.map(entry => (
-          <EntryRow key={entry.id} entry={entry} onEdit={onEdit} onDelete={onDelete} />
+          <EntryRow key={entry.id} entry={entry} onEdit={onEdit} onDelete={onDelete} categoryLookup={categoryLookup} />
         ))}
       </div>
     </div>
