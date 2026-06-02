@@ -57,7 +57,7 @@ export function Login({ onSignIn, user }) {
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 bg-surface-50 dark:bg-surface-950">
+      <div className="flex-1 flex flex-col items-center justify-center px-5 sm:px-8 py-12 bg-surface-50 dark:bg-surface-950">
         {/* Mobile wordmark */}
         <div className="lg:hidden mb-10 text-center">
           <span className="text-2xl font-bold text-surface-900 dark:text-surface-100 tracking-tight">spaceeeee</span>

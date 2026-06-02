@@ -207,7 +207,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
               onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
               className="group flex items-center gap-2 pl-4 pr-2 py-2 text-xs font-semibold rounded-full bg-primary-500 text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary-600 hover:shadow-[0_4px_16px_rgba(107,79,255,0.35)] active:scale-[0.97]"
             >
-              Add holding
+              <span className="hidden sm:inline">Add holding</span><span className="sm:hidden">Add</span>
               <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 group-hover:-translate-y-px transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />

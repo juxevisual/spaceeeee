@@ -24,7 +24,7 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
           aria-expanded={expanded}
         >
           <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate tracking-[-0.01em]">
                   {holding.asset_name}

@@ -109,10 +109,10 @@ export function ExpenseDashboard({ user }) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-      {/* Header */}
-      <div ref={headerRef} className="flex items-center justify-between">
+      {/* Header — stacks on mobile, single row on sm+ */}
+      <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2">
           <TabBar active={tab} onChange={setTab} />
           <button
             onClick={() => { setEditTarget(null); setFormOpen(true) }}

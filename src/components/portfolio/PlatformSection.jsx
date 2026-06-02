@@ -51,8 +51,8 @@ export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddFor
             </div>
 
             <div className="flex-1 text-left min-w-0">
-              <span className="font-semibold text-sm text-surface-800 dark:text-surface-200">{platform}</span>
-              <span className="text-xs text-surface-400 dark:text-surface-500 ml-2">
+              <span className="font-semibold text-sm text-surface-800 dark:text-surface-200 truncate">{platform}</span>
+              <span className="text-xs text-surface-400 dark:text-surface-500 ml-2 flex-shrink-0">
                 {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
               </span>
             </div>

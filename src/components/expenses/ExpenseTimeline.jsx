@@ -17,7 +17,7 @@ function EntryRow({ entry, onEdit, onDelete }) {
           aria-hidden="true"
         />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
           <span className="text-xs font-medium" style={{ color: dot }}>{label}</span>
@@ -94,7 +94,7 @@ export function CategorySummaryBar({ byCategory, total }) {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-surface-400 dark:text-surface-500 tabular-nums">{pct.toFixed(0)}%</span>
-                <span className="text-xs font-medium text-surface-700 dark:text-surface-300 tabular-nums w-24 text-right">{formatIDR(amount)}</span>
+                <span className="text-xs font-medium text-surface-700 dark:text-surface-300 tabular-nums flex-shrink-0 text-right">{formatIDR(amount)}</span>
               </div>
             </div>
             <div className="h-1 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">

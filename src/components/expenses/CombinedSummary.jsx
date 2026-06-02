@@ -182,9 +182,11 @@ export function CombinedSummary({ user }) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 min-w-0">
         <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
-        <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
+        <div className="flex-shrink-0">
+          <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
+        </div>
       </div>
 
       {/* Stat strip */}

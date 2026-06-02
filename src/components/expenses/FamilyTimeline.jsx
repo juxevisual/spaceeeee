@@ -13,7 +13,7 @@ function FamilyEntryRow({ entry, onEdit, onDelete, authorName }) {
       <div className="flex-shrink-0 mt-0.5">
         <span className="block w-2.5 h-2.5 rounded-full mt-1" style={{ background: dot }} aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
           <span className="text-xs font-medium text-surface-600 dark:text-surface-400">{label}</span>
