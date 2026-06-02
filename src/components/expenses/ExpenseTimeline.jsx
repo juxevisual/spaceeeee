@@ -20,7 +20,7 @@ function EntryRow({ entry, onEdit, onDelete }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
-          <span className="text-xs font-medium text-surface-600 dark:text-surface-400">{label}</span>
+          <span className="text-xs font-medium" style={{ color: dot }}>{label}</span>
           {entry.description && (
             <span className="text-xs text-surface-400 dark:text-surface-500 truncate">{entry.description}</span>
           )}
@@ -133,7 +133,7 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
   return (
     <div>
       {/* Category summary bar */}
-      <div className="pb-4 mb-4 border-b border-surface-100 dark:border-surface-800">
+      <div className="pb-5 mb-6 border-b border-surface-100 dark:border-surface-800">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">By category</p>
           <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums">{formatIDR(monthlyTotal)}</p>

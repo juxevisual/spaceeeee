@@ -76,7 +76,7 @@ export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddFor
           <div className={`grid transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
             <div className="overflow-hidden">
               <div className="px-3 pb-3 space-y-2 border-t border-black/[0.04] dark:border-white/[0.04]">
-                <div className="pt-2 space-y-2">
+                <div className="pt-2 space-y-2.5">
                   {holdings.map(h => (
                     <HoldingCard key={h.id} holding={h} onEdit={onEdit} onDelete={onDelete} />
                   ))}

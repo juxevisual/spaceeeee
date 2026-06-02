@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
+import { fetchLiveRates, fetchSingleRate, isRatesStale } from '../lib/exchangeRates'
 
-function toIDR(holding, usdRate) {
-  const rate = holding.currency === 'USD' ? usdRate : 1
+function toIDR(holding, exchangeRates) {
+  const rate = holding.currency === 'IDR' ? 1 : (exchangeRates?.[holding.currency] || 0)
   const currentValue = holding.quantity * holding.current_price * rate
   const costBasis = holding.quantity * holding.avg_buy_price * rate
   const gainLoss = currentValue - costBasis
@@ -10,42 +11,71 @@ function toIDR(holding, usdRate) {
   return { currentValue, costBasis, gainLoss, gainLossPct }
 }
 
+function computeNetWorth(holdingsData, exchangeRates) {
+  return (holdingsData || []).reduce((sum, h) => {
+    const rate = h.currency === 'IDR' ? 1 : (exchangeRates?.[h.currency] || 0)
+    return sum + (h.quantity || 0) * (h.current_price || 0) * rate
+  }, 0)
+}
+
+async function recordSnapshot(userId, netWorthValue) {
+  if (!netWorthValue || netWorthValue <= 0) return
+  await supabase.from('portfolio_snapshots').insert({ user_id: userId, net_worth: netWorthValue })
+}
+
 export function usePortfolio(user) {
   const [holdings, setHoldings] = useState([])
-  const [settings, setSettings] = useState({ usd_idr_rate: 16000, display_name: '' })
+  const [settings, setSettings] = useState({ exchange_rates: { USD: 16000 }, display_name: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshingRates, setRefreshingRates] = useState(false)
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (shouldRecord = false) => {
     if (!user) return
     setLoading(true)
     setError(null)
     try {
       const [holdingsRes, settingsRes] = await Promise.all([
-        supabase
-          .from('portfolio_entries')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('user_settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .single(),
+        supabase.from('portfolio_entries').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('user_settings').select('*').eq('user_id', user.id).single(),
       ])
 
       if (holdingsRes.error) throw holdingsRes.error
-      setHoldings(holdingsRes.data || [])
+      const holdingsData = holdingsRes.data || []
+      setHoldings(holdingsData)
 
-      if (settingsRes.data) {
-        setSettings(settingsRes.data)
+      const settingsData = settingsRes.data
+      if (settingsData) {
+        // Migrate: copy usd_idr_rate into exchange_rates if needed
+        if (settingsData.usd_idr_rate && !settingsData.exchange_rates?.USD) {
+          settingsData.exchange_rates = { ...(settingsData.exchange_rates || {}), USD: settingsData.usd_idr_rate }
+        }
+        setSettings(settingsData)
+
+        // Auto-fetch rates if stale
+        if (isRatesStale(settingsData.rates_updated_at)) {
+          fetchRatesBackground(settingsData.exchange_rates || { USD: 16000 }, holdingsData, settingsData)
+        }
       } else {
-        await supabase.from('user_settings').upsert({
+        const defaultSettings = {
           user_id: user.id,
           usd_idr_rate: 16000,
+          exchange_rates: { USD: 16000 },
           display_name: user.email?.split('@')[0] || 'User',
           custom_asset_types: [],
-        })
+        }
+        await supabase.from('user_settings').upsert(defaultSettings)
+        setSettings(defaultSettings)
+      }
+
+      const rates = settingsData?.exchange_rates || { USD: 16000 }
+      const netWorthValue = computeNetWorth(holdingsData, rates)
+
+      if (shouldRecord) {
+        await recordSnapshot(user.id, netWorthValue)
+      } else {
+        const { data: existing } = await supabase.from('portfolio_snapshots').select('id').eq('user_id', user.id).limit(1)
+        if (!existing?.length) await recordSnapshot(user.id, netWorthValue)
       }
     } catch (err) {
       setError(err.message)
@@ -54,59 +84,74 @@ export function usePortfolio(user) {
     }
   }, [user])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const fetchRatesBackground = useCallback(async (currentRates, holdingsData, settingsData) => {
+    try {
+      const updated = await fetchLiveRates(currentRates)
+      const newSettings = { ...settingsData, exchange_rates: updated, rates_updated_at: new Date().toISOString() }
+      await supabase.from('user_settings').upsert({ user_id: user.id, exchange_rates: updated, rates_updated_at: new Date().toISOString() })
+      setSettings(s => ({ ...s, exchange_rates: updated, rates_updated_at: new Date().toISOString() }))
+    } catch {}
+  }, [user])
+
+  useEffect(() => { fetchData(false) }, [fetchData])
+
+  const refreshRates = useCallback(async () => {
+    setRefreshingRates(true)
+    try {
+      const currentRates = settings.exchange_rates || { USD: 16000 }
+      const updated = await fetchLiveRates(currentRates)
+      await supabase.from('user_settings').upsert({ user_id: user.id, exchange_rates: updated, rates_updated_at: new Date().toISOString() })
+      setSettings(s => ({ ...s, exchange_rates: updated, rates_updated_at: new Date().toISOString() }))
+    } catch {}
+    setRefreshingRates(false)
+  }, [user, settings])
+
+  const addCurrencyRate = useCallback(async (code, rate) => {
+    if (code === 'IDR') return
+    const newRates = { ...settings.exchange_rates, [code]: rate }
+    const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, exchange_rates: newRates, updated_at: new Date().toISOString() })
+    if (!error) setSettings(s => ({ ...s, exchange_rates: newRates }))
+    return { error }
+  }, [user, settings])
 
   const addHolding = useCallback(async (data) => {
-    const { error } = await supabase.from('portfolio_entries').insert({
-      ...data,
-      user_id: user.id,
-    })
-    if (!error) fetchData()
+    const { error } = await supabase.from('portfolio_entries').insert({ ...data, user_id: user.id })
+    if (!error) fetchData(true)
     return { error }
   }, [user, fetchData])
 
   const updateHolding = useCallback(async (id, data) => {
-    const { error } = await supabase
-      .from('portfolio_entries')
-      .update({ ...data, last_updated: new Date().toISOString() })
-      .eq('id', id)
-    if (!error) fetchData()
+    const { error } = await supabase.from('portfolio_entries').update({ ...data, last_updated: new Date().toISOString() }).eq('id', id)
+    if (!error) fetchData(true)
     return { error }
   }, [fetchData])
 
   const deleteHolding = useCallback(async (id) => {
     const { error } = await supabase.from('portfolio_entries').delete().eq('id', id)
-    if (!error) fetchData()
+    if (!error) fetchData(true)
     return { error }
   }, [fetchData])
 
   const addAssetType = useCallback(async (type) => {
     const current = settings.custom_asset_types || []
     const updated = [...current, type]
-    const { error } = await supabase.from('user_settings').upsert({
-      user_id: user.id,
-      custom_asset_types: updated,
-      updated_at: new Date().toISOString(),
-    })
+    const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, custom_asset_types: updated, updated_at: new Date().toISOString() })
     if (!error) setSettings(s => ({ ...s, custom_asset_types: updated }))
     return { error }
   }, [user, settings])
 
-  const updateUsdRate = useCallback(async (rate) => {
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({ user_id: user.id, usd_idr_rate: rate, updated_at: new Date().toISOString() })
-    if (!error) setSettings(s => ({ ...s, usd_idr_rate: rate }))
-    return { error }
-  }, [user])
+  const exchangeRates = settings.exchange_rates || { USD: 16000 }
 
-  const usdRate = settings.usd_idr_rate
+  // Record snapshot after USD rate change (legacy compat + multi-currency)
+  const updateUsdRate = useCallback(async (rate) => {
+    return addCurrencyRate('USD', rate)
+  }, [addCurrencyRate])
 
   const derived = useMemo(() => {
     let netWorth = 0, gainLoss = 0, costBasisTotal = 0
     const allocationByType = {}
     const holdingsWithCalc = holdings.map(h => {
-      const calc = toIDR(h, usdRate)
+      const calc = toIDR(h, exchangeRates)
       netWorth += calc.currentValue
       gainLoss += calc.gainLoss
       costBasisTotal += calc.costBasis
@@ -115,7 +160,7 @@ export function usePortfolio(user) {
     })
     const gainLossPct = costBasisTotal > 0 ? (gainLoss / costBasisTotal) * 100 : 0
     return { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc }
-  }, [holdings, usdRate])
+  }, [holdings, JSON.stringify(exchangeRates)])
 
   const { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc } = derived
 
@@ -128,12 +173,18 @@ export function usePortfolio(user) {
     updateHolding,
     deleteHolding,
     updateUsdRate,
+    addCurrencyRate,
+    refreshRates,
+    refreshingRates,
+    exchangeRates,
+    ratesUpdatedAt: settings.rates_updated_at,
     addAssetType,
     customAssetTypes: settings.custom_asset_types || [],
     netWorth,
     gainLoss,
     gainLossPct,
     allocationByType,
+    userId: user?.id,
     refetch: fetchData,
   }
 }

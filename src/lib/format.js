@@ -41,40 +41,61 @@ export function formatRelativeTime(dateStr) {
   return formatDate(dateStr.split('T')[0])
 }
 
+// Ordered by typical spending frequency (most → least)
 export const CATEGORY_LABELS = {
   makan_minuman: 'Food & Drinks',
-  transport: 'Transport',
-  belanja: 'Groceries & Household',
-  hiburan: 'Entertainment & Subscriptions',
-  tagihan: 'Bills & Utilities',
-  lainnya: 'Others',
+  snack:         'Snack & Treat',
+  transport:     'Transport',
+  belanja:       'Groceries',
+  household:     'Household',
+  tagihan:       'Bills & Utilities',
+  phone:         'Phone',
+  subscription:  'Subscription',
+  beauty:        'Beauty',
+  health:        'Health',
+  parking:       'Parking',
+  hiburan:       'Entertainment',
+  gift:          'Gift',
+  education:     'Education',
+  lainnya:       'Others',
 }
 
 export const CATEGORY_COLORS = {
-  makan_minuman: 'oklch(0.68 0.19 35)',   // electric orange
-  transport:     'oklch(0.62 0.20 220)',   // electric blue
-  belanja:       'oklch(0.64 0.19 150)',   // electric green
-  hiburan:       'oklch(0.60 0.21 310)',   // electric violet
-  tagihan:       'oklch(0.60 0.26 280)',   // electric indigo (primary)
-  lainnya:       'oklch(0.56 0.08 280)',   // muted indigo — neutral
+  makan_minuman: 'oklch(0.68 0.19 35)',   // orange
+  snack:         'oklch(0.60 0.15 45)',   // warm brown
+  transport:     'oklch(0.62 0.20 220)',   // blue
+  belanja:       'oklch(0.64 0.19 150)',   // green
+  household:     'oklch(0.66 0.16 62)',    // amber
+  tagihan:       'oklch(0.60 0.26 280)',   // indigo
+  phone:         'oklch(0.58 0.16 200)',   // teal
+  subscription:  'oklch(0.56 0.18 255)',   // violet-blue
+  beauty:        'oklch(0.62 0.18 320)',   // pink-violet
+  health:        'oklch(0.58 0.20 160)',   // forest green
+  parking:       'oklch(0.54 0.10 210)',   // slate
+  hiburan:       'oklch(0.60 0.21 310)',   // violet
+  gift:          'oklch(0.60 0.19 15)',    // red
+  education:     'oklch(0.60 0.20 240)',   // deep blue
+  lainnya:       'oklch(0.56 0.08 280)',   // muted indigo
 }
 
 export const ASSET_TYPE_LABELS = {
-  reksa_dana: 'Reksa Dana',
-  saham: 'Saham',
-  emas: 'Emas',
-  crypto: 'Crypto',
-  deposito: 'Deposito',
-  lainnya: 'Lainnya',
+  reksa_dana: 'Mutual Fund',
+  saham:      'Stocks',
+  emas:       'Gold',
+  crypto:     'Crypto',
+  deposito:   'Deposit',
+  cash:       'Cash',
+  lainnya:    'Others',
 }
 
 export const ASSET_TYPE_ICONS = {
   reksa_dana: 'bar-chart',
-  saham: 'trending-up',
-  emas: 'diamond',
-  crypto: 'hexagon',
-  deposito: 'bank',
-  lainnya: 'layers',
+  saham:      'trending-up',
+  emas:       'diamond',
+  crypto:     'hexagon',
+  deposito:   'bank',
+  cash:       'wallet',
+  lainnya:    'layers',
 }
 
 export const ASSET_TYPE_COLORS_MAP = {
@@ -83,15 +104,25 @@ export const ASSET_TYPE_COLORS_MAP = {
   emas:       'oklch(0.68 0.190 35)',
   crypto:     'oklch(0.60 0.210 310)',
   deposito:   'oklch(0.62 0.200 220)',
+  cash:       'oklch(0.72 0.130 82)',
   lainnya:    'oklch(0.56 0.080 280)',
 }
 
 export const CATEGORY_ICONS = {
   makan_minuman: 'utensils',
+  snack:         'coffee',
   transport:     'car',
   belanja:       'shopping-bag',
-  hiburan:       'film',
+  household:     'home',
   tagihan:       'zap',
+  phone:         'phone',
+  subscription:  'wifi',
+  beauty:        'scissors',
+  health:        'pill',
+  parking:       'parking',
+  hiburan:       'film',
+  gift:          'gift',
+  education:     'book',
   lainnya:       'more',
 }
 
@@ -117,11 +148,12 @@ export function getAllCategories(custom = []) {
 
 export const ASSET_QUANTITY_UNITS = {
   reksa_dana: 'Unit',
-  saham: 'Lembar',
-  emas: 'Gram',
-  crypto: 'Koin',
-  deposito: 'IDR',
-  lainnya: 'Unit',
+  saham:      'Shares',
+  emas:       'Gram',
+  crypto:     'Coin',
+  deposito:   'IDR',
+  cash:       'IDR',
+  lainnya:    'Unit',
 }
 
 export function formatQuantity(quantity, assetType) {
@@ -136,10 +168,11 @@ export function formatQuantity(quantity, assetType) {
 }
 
 export const ASSET_TYPE_COLORS = [
-  'oklch(0.60 0.260 280)',  // electric indigo (primary)
+  'oklch(0.60 0.260 280)',  // electric indigo
   'oklch(0.64 0.190 150)',  // electric green
   'oklch(0.68 0.190 35)',   // electric orange
   'oklch(0.60 0.210 310)',  // electric violet
   'oklch(0.62 0.200 220)',  // electric blue
+  'oklch(0.72 0.130 82)',   // warm gold (cash)
   'oklch(0.56 0.080 280)',  // muted indigo
 ]

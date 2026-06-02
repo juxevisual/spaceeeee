@@ -1,16 +1,23 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { getAllCategories } from '../../lib/format'
 import { useToast } from '../shared/Toast'
 import { Dialog } from '../shared/Dialog'
 import { Icon } from '../shared/Icon'
 import { TypeCreator } from '../shared/TypeCreator'
+import { NumberInput } from '../shared/NumberInput'
 const today = () => new Date().toISOString().split('T')[0]
 const empty = { amount: '', category: 'makan_minuman', custom_label: '', description: '', date: today(), type: 'personal' }
+
+const CAT_THRESHOLD = 9
+const CAT_SHOW = 6
 
 export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType = 'personal', customCategories = [], onAddCategory }) {
   const toast = useToast()
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [categoryExpanded, setCategoryExpanded] = useState(false)
   const allCategories = getAllCategories(customCategories)
+  const needsCatCollapse = allCategories.length > CAT_THRESHOLD
+
   const [form, setForm] = useState(initial ? { ...empty, ...initial } : { ...empty, type: initialType })
   const [errors, setErrors] = useState({})
 
@@ -18,6 +25,13 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
     setForm(initial ? { ...empty, ...initial } : { ...empty, type: initialType })
     setErrors({})
   }, [initial, initialType])
+
+  // Auto-expand if the selected category is in the hidden section
+  useEffect(() => {
+    if (!needsCatCollapse || categoryExpanded) return
+    const idx = allCategories.findIndex(c => c.key === form.category)
+    if (idx >= CAT_SHOW) setCategoryExpanded(true)
+  }, [form.category, allCategories.length, needsCatCollapse, categoryExpanded])
 
   const set = (key, value) => {
     setForm(f => ({ ...f, [key]: value }))
@@ -56,7 +70,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
     <Dialog
       titleId={titleId}
       onClose={onClose}
-      className="w-full max-w-sm bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl"
+      className="w-full max-w-sm bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl flex flex-col max-h-[90dvh]"
     >
       <div className="flex items-center justify-between px-5 py-5 border-b border-surface-100 dark:border-surface-800">
         <h2 id={titleId} className="font-semibold text-surface-900 dark:text-surface-100 text-sm">
@@ -73,7 +87,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
+      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5 overflow-y-auto flex-1 scrollbar-none">
         {/* Expense type toggle */}
         <div role="group" aria-label="Expense type" className="grid grid-cols-2 gap-2">
           <button
@@ -108,9 +122,8 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
 
         <div>
           <label htmlFor="ef-amount" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Amount (IDR)</label>
-          <input
+          <NumberInput
             id="ef-amount"
-            type="number" min="1" step="1"
             className={inputClass('amount')}
             placeholder="0"
             value={form.amount}
@@ -123,7 +136,10 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
         <div>
           <label className="block text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-2">Category</label>
           <div role="group" aria-label="Expense category" className="grid grid-cols-3 gap-2">
-            {allCategories.map(cat => {
+            {(needsCatCollapse && !categoryExpanded
+              ? allCategories.slice(0, CAT_SHOW)
+              : allCategories
+            ).map(cat => {
               const isSelected = form.category === cat.key
               return (
                 <button
@@ -143,22 +159,39 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
                 </button>
               )
             })}
-            {/* Add new category */}
+            {/* "+ New" only visible when not collapsed */}
+            {(!needsCatCollapse || categoryExpanded) && (
+              <button
+                type="button"
+                onClick={() => setShowAddCategory(s => !s)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  showAddCategory
+                    ? 'border-primary-400 text-primary-500 bg-primary-50 dark:bg-primary-900/10'
+                    : 'border-surface-300 dark:border-surface-600 text-surface-400 dark:text-surface-500 hover:border-primary-400 hover:text-primary-500'
+                }`}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span className="text-[11px] font-semibold leading-none">New</span>
+              </button>
+            )}
+          </div>
+
+          {/* Expand / collapse toggle */}
+          {needsCatCollapse && (
             <button
               type="button"
-              onClick={() => setShowAddCategory(s => !s)}
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                showAddCategory
-                  ? 'border-primary-400 text-primary-500 bg-primary-50 dark:bg-primary-900/10'
-                  : 'border-surface-300 dark:border-surface-600 text-surface-400 dark:text-surface-500 hover:border-primary-400 hover:text-primary-500'
-              }`}
+              onClick={() => { setCategoryExpanded(e => !e); setShowAddCategory(false) }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-surface-400 dark:text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors duration-200"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"
+                className={`transition-transform duration-200 ${categoryExpanded ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9" />
               </svg>
-              <span className="text-[11px] font-semibold leading-none">New</span>
+              {categoryExpanded ? 'Show less' : `${allCategories.length - CAT_SHOW} more`}
             </button>
-          </div>
+          )}
 
           {/* Inline category creator */}
           <div className={`grid transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${showAddCategory ? 'grid-rows-[1fr] mt-2' : 'grid-rows-[0fr]'}`}>
@@ -230,7 +263,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
             disabled={loading}
             className="flex-1 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Savingâ€¦' : initial ? 'Save' : 'Add expense'}
+            {loading ? 'Saving…' : initial ? 'Save' : 'Add expense'}
           </button>
         </div>
       </form>

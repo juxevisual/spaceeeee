@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MonthPicker } from '../shared/MonthPicker'
 import { StatCard } from '../shared/StatCard'
 import { ComparisonChart } from './charts/ComparisonChart'
@@ -97,7 +97,7 @@ function PartnerPicker({ partners, selectedId, onSelect }) {
                   : 'text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
               }`}
             >
-              {p.display_name || p.user_id.slice(0, 8) + 'â€¦'}
+              {p.display_name || p.user_id.slice(0, 8) + '…'}
             </button>
           ))}
         </div>
@@ -106,10 +106,13 @@ function PartnerPicker({ partners, selectedId, onSelect }) {
   )
 }
 
-function ChartSection({ title, children }) {
+function ChartSection({ title, children, featured = false }) {
   return (
-    <div className="pb-6 border-b border-surface-100 dark:border-surface-800 last:border-0 last:pb-0">
-      <h2 className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-4">{title}</h2>
+    <div
+      className={`border-b last:border-0 last:pb-0 ${featured ? 'pb-8' : 'pb-6'}`}
+      style={{ borderBottomColor: 'oklch(0.64 0.19 150 / 0.15)' }}
+    >
+      <h2 className="text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-4">{title}</h2>
       {children}
     </div>
   )
@@ -184,29 +187,29 @@ export function CombinedSummary({ user }) {
         <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
       </div>
 
-      {/* Stat strip â€” use gain green for the combined total */}
+      {/* Stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-6 border-b border-surface-100 dark:border-surface-800">
         <StatCard
           label="Personal total"
-          value={loading ? 'â€”' : formatCompact(combinedTotal)}
+          value={loading ? '—' : formatCompact(combinedTotal)}
           sub={familyTotal > 0 ? `+${formatCompact(familyTotal)} family` : undefined}
           loading={loading}
         />
         <StatCard
           label={myName}
-          value={loading ? 'â€”' : formatCompact(myTotal)}
+          value={loading ? '—' : formatCompact(myTotal)}
           sub={combinedTotal > 0 ? `${((myTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined}
           loading={loading}
         />
         <StatCard
           label={partnerName}
-          value={loading ? 'â€”' : formatCompact(partnerTotal)}
+          value={loading ? '—' : formatCompact(partnerTotal)}
           sub={combinedTotal > 0 ? `${((partnerTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined}
           loading={loading}
         />
         <StatCard
           label="Family"
-          value={loading ? 'â€”' : (familyTotal > 0 ? formatCompact(familyTotal) : 'â€”')}
+          value={loading ? '—' : (familyTotal > 0 ? formatCompact(familyTotal) : '—')}
           sub={!loading && familyTotal > 0 ? `${familyExpenses.length} item${familyExpenses.length !== 1 ? 's' : ''}` : undefined}
           loading={loading}
         />
@@ -236,7 +239,7 @@ export function CombinedSummary({ user }) {
             <FamilyCompact expenses={familyExpenses} userNames={userNames} />
           )}
 
-          <ChartSection title={`${myName} vs ${partnerName}`}>
+          <ChartSection title={`${myName} vs ${partnerName}`} featured>
             <ComparisonChart
               allExpenses={filteredExpenses}
               userId={user.id}

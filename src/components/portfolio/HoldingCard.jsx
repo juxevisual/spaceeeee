@@ -1,11 +1,16 @@
-﻿import { useState } from 'react'
-import { formatIDR, formatCompact, formatPct, formatQuantity, formatRelativeTime, ASSET_TYPE_LABELS } from '../../lib/format'
+import { useState } from 'react'
+import { formatIDR, formatCompact, formatPct, formatQuantity, formatRelativeTime, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS_MAP } from '../../lib/format'
 
 export function HoldingCard({ holding, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   const isGain = holding.gainLoss >= 0
+  const typeColor = ASSET_TYPE_COLORS_MAP[holding.asset_type]
+  const typeBadgeStyle = typeColor ? {
+    backgroundColor: typeColor.replace(')', ' / 0.10)'),
+    color: typeColor,
+  } : {}
 
   return (
     /* Double-bezel outer shell */
@@ -24,21 +29,24 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
                 <span className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate tracking-[-0.01em]">
                   {holding.asset_name}
                 </span>
-                <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 uppercase tracking-[0.06em]">
+                <span
+                  className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md uppercase tracking-[0.06em] transition-colors duration-200"
+                  style={typeBadgeStyle}
+                >
                   {ASSET_TYPE_LABELS[holding.asset_type] || holding.asset_type}
                 </span>
-                {holding.currency === 'USD' && (
+                {holding.currency && holding.currency !== 'IDR' && (
                   <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
-                    USD
+                    {holding.currency}
                   </span>
                 )}
               </div>
               <p className="text-xs text-surface-400 dark:text-surface-500 mt-0.5 tabular-nums">
                 {holding.input_mode === 'value'
-                  ? `Total value Â· ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatCompact(holding.current_price)}`
-                  : `${formatQuantity(holding.quantity, holding.asset_type)} Â· ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatIDR(holding.current_price)}`
+                  ? `Total value · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatCompact(holding.current_price)}`
+                  : `${formatQuantity(holding.quantity, holding.asset_type)} · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatIDR(holding.current_price)}`
                 }
-                <span className="mx-1.5 text-surface-200 dark:text-surface-700">Â·</span>
+                <span className="mx-1.5 text-surface-200 dark:text-surface-700">·</span>
                 <span className="text-[11px]">{formatRelativeTime(holding.last_updated)}</span>
               </p>
             </div>

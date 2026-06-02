@@ -34,6 +34,10 @@ export const ICON_LIBRARY = [
   { name: 'star',         label: 'Favorite',      paths: ['M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'] },
   { name: 'tag',          label: 'Custom',        paths: ['M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z', 'M7 7h.01'] },
   { name: 'more',         label: 'Other',         paths: ['M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', 'M19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z', 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z'] },
+  { name: 'parking',      label: 'Parking',       paths: ['M9 7v10', 'M9 7h5a3.5 3.5 0 0 1 0 7H9'] },
+  { name: 'scissors',     label: 'Beauty',        paths: ['M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', 'M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', 'M20 4 8.12 15.88', 'M14.47 14.48 20 20', 'M8.12 8.12 12 12'] },
+  { name: 'pill',         label: 'Health',        paths: ['M10.5 20.5 20.5 10.5a5 5 0 0 0-7.07-7.07L3.43 13.43a5 5 0 0 0 7.07 7.07z', 'M8.5 15.5 15.5 8.5'] },
+  { name: 'wifi',         label: 'Subscription',  paths: ['M5 12.55a11 11 0 0 1 14.08 0', 'M1.42 9a16 16 0 0 1 21.16 0', 'M8.53 16.11a6 6 0 0 1 6.95 0', 'M12 20h.01'] },
 ]
 
 export const TYPE_COLORS = [

@@ -1,9 +1,14 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ASSET_QUANTITY_UNITS, getAllAssetTypes } from '../../lib/format'
 import { useToast } from '../shared/Toast'
 import { Dialog } from '../shared/Dialog'
 import { Icon } from '../shared/Icon'
 import { TypeCreator } from '../shared/TypeCreator'
+import { NumberInput } from '../shared/NumberInput'
+import { CurrencySelector } from '../shared/CurrencySelector'
+
+const TYPE_THRESHOLD = 9
+const TYPE_SHOW = 6
 
 const QUANTITY_STEP = {
   reksa_dana: '0.0001',
@@ -11,6 +16,7 @@ const QUANTITY_STEP = {
   emas: '0.0001',
   crypto: '0.00000001',
   deposito: '1000',
+  cash: '1000',
   lainnya: 'any',
 }
 
@@ -19,7 +25,7 @@ const empty = {
   platform: '',
   asset_name: '',
   asset_type: 'reksa_dana',
-  input_mode: 'units',
+  input_mode: 'value',
   quantity: '',
   avg_buy_price: '',
   current_price: '',
@@ -29,23 +35,38 @@ const empty = {
   notes: '',
 }
 
-export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTypes = [], onAddAssetType }) {
+function buildFormState(initial) {
+  if (!initial) return { ...empty }
+  return {
+    ...empty,
+    ...initial,
+    // Restore value-mode fields from the stored prices when editing
+    cost_basis_value: initial.input_mode === 'value' ? String(initial.avg_buy_price ?? '') : '',
+    current_value_input: initial.input_mode === 'value' ? String(initial.current_price ?? '') : '',
+  }
+}
+
+export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTypes = [], onAddAssetType, exchangeRates = {}, onAddCurrencyRate }) {
   const toast = useToast()
   const [showAddType, setShowAddType] = useState(false)
+  const [typeExpanded, setTypeExpanded] = useState(false)
   const allAssetTypes = getAllAssetTypes(customAssetTypes)
-  const [form, setForm] = useState(() => initial
-    ? { ...empty, ...initial, cost_basis_value: '', current_value_input: '' }
-    : { ...empty }
-  )
+  const needsTypeCollapse = allAssetTypes.length > TYPE_THRESHOLD
+
+  const [form, setForm] = useState(() => buildFormState(initial))
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
-    setForm(initial
-      ? { ...empty, ...initial, cost_basis_value: '', current_value_input: '' }
-      : { ...empty }
-    )
+    setForm(buildFormState(initial))
     setErrors({})
   }, [initial])
+
+  // Auto-expand if the selected asset type is in the hidden section
+  useEffect(() => {
+    if (!needsTypeCollapse || typeExpanded) return
+    const idx = allAssetTypes.findIndex(t => t.key === form.asset_type)
+    if (idx >= TYPE_SHOW) setTypeExpanded(true)
+  }, [form.asset_type, allAssetTypes.length, needsTypeCollapse, typeExpanded])
 
   const set = (key, value) => {
     setForm(f => ({ ...f, [key]: value }))
@@ -111,7 +132,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
     <Dialog
       titleId={titleId}
       onClose={onClose}
-      className="w-full max-w-md bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl"
+      className="w-full max-w-md bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl flex flex-col max-h-[90dvh]"
     >
       <div className="flex items-center justify-between px-5 py-5 border-b border-surface-100 dark:border-surface-800">
         <h2 id={titleId} className="font-semibold text-surface-900 dark:text-surface-100 text-sm">
@@ -128,7 +149,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
+      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5 overflow-y-auto flex-1 scrollbar-none">
         {/* Input mode toggle */}
         <div role="group" aria-label="Input method" className="grid grid-cols-2 gap-2">
           <button
@@ -188,7 +209,10 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
         <div>
           <label className="block text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-2">Asset type</label>
           <div role="group" aria-label="Asset type" className="grid grid-cols-3 gap-2">
-            {allAssetTypes.map(type => {
+            {(needsTypeCollapse && !typeExpanded
+              ? allAssetTypes.slice(0, TYPE_SHOW)
+              : allAssetTypes
+            ).map(type => {
               const isSelected = form.asset_type === type.key
               return (
                 <button
@@ -208,22 +232,39 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                 </button>
               )
             })}
-            {/* Add new type */}
+            {/* "+ New" only visible when not collapsed */}
+            {(!needsTypeCollapse || typeExpanded) && (
+              <button
+                type="button"
+                onClick={() => setShowAddType(s => !s)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  showAddType
+                    ? 'border-primary-400 text-primary-500 bg-primary-50 dark:bg-primary-900/10'
+                    : 'border-surface-300 dark:border-surface-600 text-surface-400 dark:text-surface-500 hover:border-primary-400 hover:text-primary-500'
+                }`}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span className="text-[11px] font-semibold leading-none">New</span>
+              </button>
+            )}
+          </div>
+
+          {/* Expand / collapse toggle */}
+          {needsTypeCollapse && (
             <button
               type="button"
-              onClick={() => setShowAddType(s => !s)}
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-dashed transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                showAddType
-                  ? 'border-primary-400 text-primary-500 bg-primary-50 dark:bg-primary-900/10'
-                  : 'border-surface-300 dark:border-surface-600 text-surface-400 dark:text-surface-500 hover:border-primary-400 hover:text-primary-500'
-              }`}
+              onClick={() => { setTypeExpanded(e => !e); setShowAddType(false) }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-surface-400 dark:text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors duration-200"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"
+                className={`transition-transform duration-200 ${typeExpanded ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9" />
               </svg>
-              <span className="text-[11px] font-semibold leading-none">New</span>
+              {typeExpanded ? 'Show less' : `${allAssetTypes.length - TYPE_SHOW} more`}
             </button>
-          </div>
+          )}
 
           {/* Inline type creator */}
           <div className={`grid transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${showAddType ? 'grid-rows-[1fr] mt-2' : 'grid-rows-[0fr]'}`}>
@@ -244,66 +285,79 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
 
         {/* Currency */}
         <div>
-          <span className="block text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-2" id="hf-currency-label">Currency</span>
-          <div role="group" aria-labelledby="hf-currency-label" className="flex p-1 rounded-full bg-surface-100 dark:bg-surface-800 ring-1 ring-black/[0.04] dark:ring-white/[0.04]">
-            <button
-              type="button"
-              aria-pressed={form.currency === 'IDR'}
-              onClick={() => set('currency', 'IDR')}
-              style={form.currency === 'IDR' ? { backgroundColor: 'oklch(0.60 0.26 280)' } : undefined}
-              className={`flex-1 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] ${
-                form.currency === 'IDR'
-                  ? 'text-white shadow-[0_4px_16px_rgba(107,79,255,0.30)]'
-                  : 'text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
-              }`}
-            >IDR</button>
-            <button
-              type="button"
-              aria-pressed={form.currency === 'USD'}
-              onClick={() => set('currency', 'USD')}
-              style={form.currency === 'USD' ? { backgroundColor: 'oklch(0.60 0.26 280)' } : undefined}
-              className={`flex-1 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] ${
-                form.currency === 'USD'
-                  ? 'text-white shadow-[0_4px_16px_rgba(107,79,255,0.30)]'
-                  : 'text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
-              }`}
-            >USD</button>
-          </div>
+          <label className="block text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-2">Currency</label>
+          <CurrencySelector
+            value={form.currency}
+            onChange={v => set('currency', v)}
+            exchangeRates={exchangeRates}
+            onAddRate={onAddCurrencyRate}
+          />
         </div>
 
         {isValueMode ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {form.asset_type === 'cash' ? (
+              /* Cash: single amount field — current value = amount (cash doesn't gain/lose) */
               <div>
                 <label htmlFor="hf-cost-basis" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
-                  Amount invested <span className="font-normal text-surface-300 dark:text-surface-600">({currLabel})</span>
+                  Amount <span className="font-normal text-surface-300 dark:text-surface-600">({currLabel})</span>
                 </label>
-                <input
+                <NumberInput
                   id="hf-cost-basis"
-                  type="number" min="0" step="any"
                   className={inputClass('cost_basis_value')}
-                  placeholder="0"
+                  placeholder="1.000.000"
                   value={form.cost_basis_value}
-                  onChange={e => set('cost_basis_value', e.target.value)}
+                  onChange={e => {
+                    const v = e.target.value
+                    setForm(f => ({ ...f, cost_basis_value: v, current_value_input: v }))
+                    setErrors(err => ({ ...err, cost_basis_value: undefined, current_value_input: undefined }))
+                  }}
                 />
                 {errors.cost_basis_value && <p className="text-xs text-loss mt-1" role="alert">{errors.cost_basis_value}</p>}
+                <p className="text-[11px] text-surface-400 dark:text-surface-500 mt-1.5">Cash value is always equal to amount — no gain or loss.</p>
               </div>
-              <div>
-                <label htmlFor="hf-current-value" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
-                  Current value <span className="font-normal text-surface-300 dark:text-surface-600">({currLabel})</span>
-                </label>
-                <input
-                  id="hf-current-value"
-                  type="number" min="0" step="any"
-                  className={inputClass('current_value_input')}
-                  placeholder="0"
-                  value={form.current_value_input}
-                  onChange={e => set('current_value_input', e.target.value)}
-                />
-                {errors.current_value_input && <p className="text-xs text-loss mt-1" role="alert">{errors.current_value_input}</p>}
+            ) : (
+              /* All other assets: two fields */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="hf-cost-basis" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
+                    Amount invested <span className="font-normal text-surface-300 dark:text-surface-600">({currLabel})</span>
+                  </label>
+                  <NumberInput
+                    id="hf-cost-basis"
+                    className={inputClass('cost_basis_value')}
+                    placeholder="0"
+                    value={form.cost_basis_value}
+                    onChange={e => {
+                      const v = e.target.value
+                      setForm(f => ({
+                        ...f,
+                        cost_basis_value: v,
+                        current_value_input: (!f.current_value_input || f.current_value_input === f.cost_basis_value)
+                          ? v
+                          : f.current_value_input,
+                      }))
+                      setErrors(err => ({ ...err, cost_basis_value: undefined }))
+                    }}
+                  />
+                  {errors.cost_basis_value && <p className="text-xs text-loss mt-1" role="alert">{errors.cost_basis_value}</p>}
+                </div>
+                <div>
+                  <label htmlFor="hf-current-value" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
+                    Current value <span className="font-normal text-surface-300 dark:text-surface-600">({currLabel})</span>
+                  </label>
+                  <NumberInput
+                    id="hf-current-value"
+                    className={inputClass('current_value_input')}
+                    placeholder="0"
+                    value={form.current_value_input}
+                    onChange={e => set('current_value_input', e.target.value)}
+                  />
+                  {errors.current_value_input && <p className="text-xs text-loss mt-1" role="alert">{errors.current_value_input}</p>}
+                </div>
               </div>
-            </div>
-            {form.cost_basis_value && form.current_value_input && (
+            )}
+            {form.asset_type !== 'cash' && form.cost_basis_value && form.current_value_input && (
               <div className="px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs text-surface-500 dark:text-surface-400">
                 Gain/loss preview:{' '}
                 <span className={Number(form.current_value_input) >= Number(form.cost_basis_value) ? 'text-gain font-medium' : 'text-loss font-medium'}>
@@ -324,7 +378,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                 type="number" min="0"
                 step={QUANTITY_STEP[form.asset_type] || 'any'}
                 className={inputClass('quantity')}
-                placeholder={form.asset_type === 'deposito' ? '1000000' : '0'}
+                placeholder={['deposito', 'cash'].includes(form.asset_type) ? '1000000' : '0'}
                 value={form.quantity}
                 onChange={e => set('quantity', e.target.value)}
               />
@@ -332,9 +386,9 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
             </div>
             <div>
               <label htmlFor="hf-avg-buy" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Avg buy</label>
-              <input
+              <NumberInput
                 id="hf-avg-buy"
-                type="number" min="0" step="any"
+                allowDecimal
                 className={inputClass('avg_buy_price')}
                 placeholder="0"
                 value={form.avg_buy_price}
@@ -344,9 +398,9 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
             </div>
             <div>
               <label htmlFor="hf-current-price" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Current price</label>
-              <input
+              <NumberInput
                 id="hf-current-price"
-                type="number" min="0" step="any"
+                allowDecimal
                 className={inputClass('current_price')}
                 placeholder="0"
                 value={form.current_price}
@@ -384,7 +438,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
             disabled={loading}
             className="flex-1 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Savingâ€¦' : initial ? 'Save changes' : 'Add holding'}
+            {loading ? 'Saving…' : initial ? 'Save changes' : 'Add holding'}
           </button>
         </div>
       </form>

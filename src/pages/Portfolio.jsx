@@ -16,6 +16,12 @@ export function Portfolio({ user }) {
         onUpdateUsdRate={portfolio.updateUsdRate}
         customAssetTypes={portfolio.customAssetTypes}
         onAddAssetType={portfolio.addAssetType}
+        userId={portfolio.userId}
+        exchangeRates={portfolio.exchangeRates}
+        ratesUpdatedAt={portfolio.ratesUpdatedAt}
+        onRefreshRates={portfolio.refreshRates}
+        refreshingRates={portfolio.refreshingRates}
+        onAddCurrencyRate={portfolio.addCurrencyRate}
       />
     </>
   )

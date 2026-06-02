@@ -23,13 +23,15 @@ export function useExpenses(user, month, year) {
           .eq('type', 'personal')
           .gte('date', startDate)
           .lte('date', endDate)
-          .order('date', { ascending: false }),
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
           .select('*')
           .gte('date', startDate)
           .lte('date', endDate)
-          .order('date', { ascending: false }),
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false }),
       ])
 
       if (myRes.error) throw myRes.error

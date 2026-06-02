@@ -1,71 +1,61 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { AllocationChart } from './AllocationChart'
+import { PortfolioChart } from './PortfolioChart'
 import { PlatformSection } from './PlatformSection'
 import { HoldingForm } from './HoldingForm'
-import { formatCompact, formatPct } from '../../lib/format'
+import { formatCompact, formatRelativeTime } from '../../lib/format'
 import { useCountUp } from '../../hooks/useCountUp'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 
 const BEZEL_OUTER = 'p-1 rounded-[1.5rem] ring-1 ring-black/[0.06] dark:ring-white/[0.15] bg-black/[0.015] dark:bg-white/[0.04]'
 const BEZEL_INNER = 'rounded-[calc(1.5rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
 
-function UsdRateInline({ rate, onSave }) {
-  const [editing, setEditing] = useState(false)
-  const [val, setVal] = useState(String(rate))
-  const [saving, setSaving] = useState(false)
+function ExchangeRatesPanel({ holdings, exchangeRates, ratesUpdatedAt, onRefresh, refreshing }) {
+  const usedCurrencies = [...new Set(
+    (holdings || []).filter(h => h.currency && h.currency !== 'IDR').map(h => h.currency)
+  )].sort()
 
-  const handleKeyDown = async (e) => {
-    if (e.key === 'Enter') {
-      const n = Number(val)
-      if (!n || n <= 0) return
-      setSaving(true)
-      await onSave(n)
-      setSaving(false)
-      setEditing(false)
-    }
-    if (e.key === 'Escape') {
-      setVal(String(rate))
-      setEditing(false)
-    }
-  }
-
-  if (editing) {
-    return (
-      <div>
-        <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-1">USD/IDR</p>
-        <input
-          autoFocus
-          type="number"
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => { setVal(String(rate)); setEditing(false) }}
-          disabled={saving}
-          className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums bg-transparent border-b border-primary-400 focus:outline-none w-24"
-        />
-        <p className="text-[11px] mt-0.5 text-surface-400">Enter Â· Esc</p>
-      </div>
-    )
-  }
+  if (usedCurrencies.length === 0) return null
 
   return (
-    <button
-      onClick={() => { setVal(String(rate)); setEditing(true) }}
-      className="text-right group"
-      title="Click to edit USD/IDR rate"
-    >
-      <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-1">USD/IDR</p>
-      <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums group-hover:text-primary-500 transition-colors duration-200">
-        {rate.toLocaleString('id-ID')}
-      </p>
-      <p className="text-[11px] mt-0.5 text-surface-300 dark:text-surface-600 group-hover:text-primary-400 transition-colors duration-200">
-        Edit
-      </p>
-    </button>
+    <div className="border-t border-surface-100 dark:border-surface-800/60 pt-3 mt-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Rates</p>
+        <div className="flex items-center gap-2">
+          {ratesUpdatedAt && (
+            <span className="text-[10px] text-surface-300 dark:text-surface-600">{formatRelativeTime(ratesUpdatedAt)}</span>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="Refresh exchange rates"
+            className="p-1 rounded-md text-surface-400 dark:text-surface-500 hover:text-primary-500 dark:hover:text-primary-400 transition-colors disabled:opacity-40"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+              className={refreshing ? 'animate-spin' : ''} aria-hidden="true">
+              <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      {usedCurrencies.map(code => (
+        <div key={code} className="flex items-center justify-between py-0.5">
+          <span className="font-mono text-xs font-bold text-surface-500 dark:text-surface-400">{code}</span>
+          <span className="text-xs tabular-nums text-surface-700 dark:text-surface-300">
+            {exchangeRates[code]
+              ? `Rp ${Math.round(exchangeRates[code]).toLocaleString('id-ID')}`
+              : <span className="text-surface-300 dark:text-surface-600 text-[10px]">no rate</span>
+            }
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 
-export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onUpdateUsdRate, customAssetTypes = [], onAddAssetType }) {
+export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate }) {
+  const [chartTab, setChartTab] = useState('performance')
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
@@ -119,15 +109,21 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
           {/* Net worth double-bezel panel */}
           <div ref={netWorthRef} className={BEZEL_OUTER}>
             <div className={`${BEZEL_INNER} p-5`}>
-              <div className="flex items-start justify-between mb-4">
+              <div className="mb-2 flex items-center gap-1.5">
+                {!loading && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500"
+                    style={{ backgroundColor: isGain ? 'oklch(0.60 0.19 150)' : 'oklch(0.55 0.18 18)' }}
+                    aria-hidden="true"
+                  />
+                )}
                 <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Net worth</p>
-                <UsdRateInline rate={settings.usd_idr_rate} onSave={onUpdateUsdRate} />
               </div>
 
               {loading ? (
                 <div className="animate-pulse h-10 w-36 bg-surface-200 dark:bg-surface-700 rounded-lg mb-3" />
               ) : (
-                <p className="text-[2.6rem] font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.03em] leading-none mb-3">
+                <p className="text-[2.6rem] font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.03em] leading-none mb-4">
                   {formatCompact(animatedNetWorth)}
                 </p>
               )}
@@ -140,28 +136,60 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                       : 'bg-loss-light dark:bg-loss/15 text-loss-dark dark:text-loss'
                   }`}>
                     {isGain ? '+' : 'âˆ’'}{formatCompact(animatedGainLoss)}
-                    <span className="opacity-40">Â·</span>
+                    <span className="opacity-40">·</span>
                     {isGain ? '+' : 'âˆ’'}{Math.abs(gainLossPct).toFixed(2)}%
                   </span>
                   {platforms.length > 0 && (
                     <p className="text-xs text-surface-400 dark:text-surface-500 mt-3">
-                      {platforms.length} platform{platforms.length !== 1 ? 's' : ''} Â· {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
+                      {platforms.length} platform{platforms.length !== 1 ? 's' : ''} · {holdings.length} holding{holdings.length !== 1 ? 's' : ''}
                     </p>
                   )}
+                  <ExchangeRatesPanel
+                    holdings={holdings}
+                    exchangeRates={exchangeRates}
+                    ratesUpdatedAt={ratesUpdatedAt}
+                    onRefresh={onRefreshRates}
+                    refreshing={refreshingRates}
+                  />
                 </>
               )}
             </div>
           </div>
 
-          {/* Allocation chart double-bezel panel */}
-          {!loading && Object.keys(allocationByType).length > 0 && (
-            <div ref={allocationRef} className={BEZEL_OUTER}>
-              <div className={`${BEZEL_INNER} p-5`}>
-                <h2 className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-4">Allocation</h2>
-                <AllocationChart allocationByType={allocationByType} />
+          {/* Performance / Allocation tabbed panel */}
+          <div ref={allocationRef} className={BEZEL_OUTER}>
+            <div className={`${BEZEL_INNER} p-5`}>
+              {/* Tab pills */}
+              <div className="flex gap-1 mb-4">
+                {[
+                  { key: 'performance', label: 'Performance' },
+                  { key: 'allocation',  label: 'Allocation' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setChartTab(key)}
+                    style={chartTab === key ? { backgroundColor: 'oklch(0.60 0.26 280)' } : undefined}
+                    className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                      chartTab === key
+                        ? 'text-white'
+                        : 'text-surface-400 dark:text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
+
+              {chartTab === 'performance' ? (
+                <PortfolioChart userId={userId} />
+              ) : (
+                Object.keys(allocationByType).length > 0
+                  ? <AllocationChart allocationByType={allocationByType} />
+                  : <p className="text-[11px] text-surface-400 dark:text-surface-500 text-center py-6">No holdings to show</p>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Error */}
           {error && !loading && (
@@ -206,7 +234,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {platforms.map((platform, i) => (
                 <PlatformSection
                   key={platform}
@@ -231,6 +259,8 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
           loading={formLoading}
           customAssetTypes={customAssetTypes}
           onAddAssetType={onAddAssetType}
+          exchangeRates={exchangeRates}
+          onAddCurrencyRate={onAddCurrencyRate}
         />
       )}
     </div>

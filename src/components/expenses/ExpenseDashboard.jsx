@@ -108,7 +108,7 @@ export function ExpenseDashboard({ user }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       {/* Header */}
       <div ref={headerRef} className="flex items-center justify-between">
         <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />

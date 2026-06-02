@@ -25,7 +25,7 @@ export function Dialog({ titleId, onClose, children, className }) {
 
   return (
     <div
-      className="dialog-backdrop-enter fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-900/50 dark:bg-surface-950/70 backdrop-blur-sm"
+      className="dialog-backdrop-enter fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-900/50 dark:bg-surface-950/70 backdrop-blur-sm overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div

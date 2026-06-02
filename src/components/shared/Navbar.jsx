@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { DarkModeToggle } from './DarkModeToggle'
 import { supabase } from '../../lib/supabase'
@@ -45,7 +45,7 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
         disabled={saving || !val.trim()}
         className="w-full mt-2 py-1.5 text-xs font-semibold rounded-full bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-40 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
       >
-        {saving ? 'Savingâ€¦' : 'Save'}
+        {saving ? 'Saving…' : 'Save'}
       </button>
     </div>
   )
@@ -105,7 +105,7 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
           spaceeeee
         </NavLink>
 
-        {/* Desktop nav â€” hidden on mobile (shown md+) */}
+        {/* Desktop nav "” hidden on mobile (shown md+) */}
         <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
           <NavLink to="/portfolio" className={pillLink}>Portfolio</NavLink>
           <NavLink to="/expenses" className={pillLink}>Expenses</NavLink>
