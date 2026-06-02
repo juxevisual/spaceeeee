@@ -1,6 +1,7 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 const webpack = require('webpack')
 const fs = require('fs')
 
@@ -42,6 +43,10 @@ module.exports = (env, argv) => {
           use: 'babel-loader',
         },
         {
+          test: /\.(png|jpe?g|gif|svg|webp|ico)$/i,
+          type: 'asset/resource',
+        },
+        {
           test: /\.css$/,
           use: [
             isProd ? MiniCssExtractPlugin.loader : 'style-loader',
@@ -53,6 +58,7 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new HtmlWebpackPlugin({ template: './index.html', inject: 'body' }),
+      new CopyPlugin({ patterns: [{ from: 'src/assets/logo.ico', to: 'favicon.ico' }] }),
       new webpack.DefinePlugin(
         Object.fromEntries(
           Object.entries({ ...envVars, ...process.env })

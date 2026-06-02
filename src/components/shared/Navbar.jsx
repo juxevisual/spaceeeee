@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { DarkModeToggle } from './DarkModeToggle'
 import { supabase } from '../../lib/supabase'
 import { useToast } from './Toast'
+import logo from '../../assets/logo.jpg'
 
 function NamePopover({ displayName, userId, onUpdated, onClose }) {
   const [val, setVal] = useState(displayName || '')
@@ -100,8 +101,9 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
 
         <NavLink
           to="/portfolio"
-          className="font-bold text-sm tracking-tight text-surface-900 dark:text-surface-100 px-3 py-1.5 flex-shrink-0"
+          className="font-bold text-sm tracking-tight text-surface-900 dark:text-surface-100 px-3 py-1.5 flex-shrink-0 flex items-center gap-2"
         >
+          <img src={logo} alt="" aria-hidden="true" className="w-6 h-6 rounded-full" />
           spaceeeee
         </NavLink>
 
