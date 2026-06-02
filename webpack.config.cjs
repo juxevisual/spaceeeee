@@ -55,7 +55,7 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({ template: './index.html', inject: 'body' }),
       new webpack.DefinePlugin(
         Object.fromEntries(
-          Object.entries(envVars)
+          Object.entries({ ...envVars, ...process.env })
             .filter(([k]) => k.startsWith('VITE_'))
             .map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)])
         )
