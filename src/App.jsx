@@ -63,8 +63,8 @@ export default function App() {
           {[0, 1, 2].map(i => (
             <div
               key={i}
-              className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce"
-              style={{ animationDelay: `${i * 0.1}s` }}
+              className="w-1.5 h-1.5 rounded-full bg-primary-400 dot-pulse"
+              style={{ animationDelay: `${i * 0.18}s` }}
             />
           ))}
         </div>

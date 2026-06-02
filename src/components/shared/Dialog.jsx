@@ -1,9 +1,21 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react'
 
 const FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
+const DialogCloseContext = createContext(null)
+export function useDialogClose() { return useContext(DialogCloseContext) }
+
 export function Dialog({ titleId, onClose, children, className }) {
+  const [exiting, setExiting] = useState(false)
+  const exitingRef = useRef(false)
   const panelRef = useRef(null)
+
+  const startExit = useCallback(() => {
+    if (!exitingRef.current) {
+      exitingRef.current = true
+      setExiting(true)
+    }
+  }, [])
 
   useEffect(() => {
     const panel = panelRef.current
@@ -12,7 +24,7 @@ export function Dialog({ titleId, onClose, children, className }) {
     getFocusable()[0]?.focus()
 
     const trap = (e) => {
-      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Escape') { startExit(); return }
       if (e.key !== 'Tab') return
       const els = getFocusable()
       const first = els[0]; const last = els[els.length - 1]
@@ -21,22 +33,25 @@ export function Dialog({ titleId, onClose, children, className }) {
     }
     panel.addEventListener('keydown', trap)
     return () => panel.removeEventListener('keydown', trap)
-  }, [onClose])
+  }, [startExit])
 
   return (
-    <div
-      className="dialog-backdrop-enter fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-900/50 dark:bg-surface-950/70 backdrop-blur-sm overflow-y-auto"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
+    <DialogCloseContext.Provider value={startExit}>
       <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className={`dialog-panel-enter ${className}`}
+        className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-900/50 dark:bg-surface-950/70 backdrop-blur-sm overflow-y-auto ${exiting ? 'dialog-backdrop-exit' : 'dialog-backdrop-enter'}`}
+        onClick={(e) => { if (e.target === e.currentTarget) startExit() }}
+        onAnimationEnd={(e) => { if (exiting && e.target === e.currentTarget) onClose() }}
       >
-        {children}
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className={`${exiting ? 'dialog-panel-exit' : 'dialog-panel-enter'} ${className}`}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+    </DialogCloseContext.Provider>
   )
 }

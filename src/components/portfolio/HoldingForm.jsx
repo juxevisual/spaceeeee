@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ASSET_QUANTITY_UNITS, getAllAssetTypes } from '../../lib/format'
 import { useToast } from '../shared/Toast'
-import { Dialog } from '../shared/Dialog'
+import { Dialog, useDialogClose } from '../shared/Dialog'
 import { Icon } from '../shared/Icon'
 import { TypeCreator } from '../shared/TypeCreator'
 import { NumberInput } from '../shared/NumberInput'
@@ -48,6 +48,8 @@ function buildFormState(initial) {
 
 export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTypes = [], onAddAssetType, exchangeRates = {}, onAddCurrencyRate }) {
   const toast = useToast()
+  const dialogClose = useDialogClose()
+  const close = dialogClose ?? onClose
   const [showAddType, setShowAddType] = useState(false)
   const [typeExpanded, setTypeExpanded] = useState(false)
   const allAssetTypes = getAllAssetTypes(customAssetTypes)
@@ -139,7 +141,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
           {initial ? 'Edit holding' : 'Add holding'}
         </h2>
         <button
-          onClick={onClose}
+          onClick={close}
           aria-label="Close dialog"
           className="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         >
@@ -431,7 +433,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
         <div className="flex gap-2 pt-1">
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             className="flex-1 py-2 text-sm font-medium rounded-lg border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
           >
             Cancel

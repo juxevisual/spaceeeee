@@ -15,11 +15,13 @@ const PERIODS = [
   { key: 'all', label: 'All', days: null },
 ]
 
+const TZ = 'Asia/Jakarta'
+
 function formatTick(dateStr, period) {
   const d = new Date(dateStr)
-  if (period === 'all') return d.getFullYear().toString()
-  if (period === '1M') return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+  if (period === 'all') return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric' }).format(d)
+  if (period === '1M') return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: TZ })
+  return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: TZ })
 }
 
 function ChartTooltip({ active, payload }) {
@@ -28,7 +30,7 @@ function ChartTooltip({ active, payload }) {
   return (
     <div className="bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl px-3 py-2 shadow-lg text-xs pointer-events-none">
       <p className="text-surface-400 dark:text-surface-500 mb-0.5">
-        {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ })}
       </p>
       <p className="font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-tight">
         {formatCompact(value)}

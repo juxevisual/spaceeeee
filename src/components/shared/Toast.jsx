@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const ToastContext = createContext(null)
 
@@ -7,7 +7,8 @@ export function ToastProvider({ children }) {
 
   const show = useCallback((message, type = 'success') => {
     const id = Date.now()
-    setToasts(t => [...t, { id, message, type }])
+    setToasts(t => [...t, { id, message, type, exiting: false }])
+    setTimeout(() => setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x)), 2350)
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 2500)
   }, [])
 
@@ -18,7 +19,7 @@ export function ToastProvider({ children }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`toast-enter px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+            className={`${t.exiting ? 'toast-exit' : 'toast-enter'} px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
               t.type === 'error'
                 ? 'bg-loss text-white'
                 : 'bg-surface-900 dark:bg-surface-100 text-surface-50 dark:text-surface-900'

@@ -28,7 +28,7 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
   }
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-52 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl shadow-xl z-50 p-3">
+    <div className="popover-enter absolute right-0 top-full mt-2 w-52 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl shadow-xl z-50 p-3">
       <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Display name</p>
       <input
         ref={ref}

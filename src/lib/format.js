@@ -1,3 +1,21 @@
+const TZ = 'Asia/Jakarta'
+
+export function nowJakarta() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const get = type => Number(parts.find(p => p.type === type).value)
+  return { year: get('year'), month: get('month'), day: get('day') }
+}
+
+export function todayJakarta() {
+  const { year, month, day } = nowJakarta()
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export function formatIDR(amount) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -25,8 +43,8 @@ export function formatPct(pct) {
 }
 
 export function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const d = new Date(dateStr + 'T00:00:00+07:00')
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: TZ })
 }
 
 export function formatRelativeTime(dateStr) {

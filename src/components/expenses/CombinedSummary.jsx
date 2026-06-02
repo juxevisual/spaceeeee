@@ -4,7 +4,7 @@ import { StatCard } from '../shared/StatCard'
 import { ComparisonChart } from './charts/ComparisonChart'
 import { CategoryChart } from './charts/CategoryChart'
 import { MonthlyTrendChart } from './charts/MonthlyTrendChart'
-import { formatCompact, formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS } from '../../lib/format'
+import { formatCompact, formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS, nowJakarta } from '../../lib/format'
 import { useExpenses } from '../../hooks/useExpenses'
 import { supabase } from '../../lib/supabase'
 
@@ -119,9 +119,9 @@ function ChartSection({ title, children, featured = false }) {
 }
 
 export function CombinedSummary({ user }) {
-  const now = new Date()
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const [year, setYear] = useState(now.getFullYear())
+  const { month: nowMonth, year: nowYear } = nowJakarta()
+  const [month, setMonth] = useState(nowMonth)
+  const [year, setYear] = useState(nowYear)
   const [trendData, setTrendData] = useState([])
   const [myName, setMyName] = useState('Me')
   const [partners, setPartners] = useState([])

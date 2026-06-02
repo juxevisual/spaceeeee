@@ -1,3 +1,5 @@
+import { nowJakarta } from '../../lib/format'
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export function MonthPicker({ month, year, onChange }) {
@@ -6,25 +8,25 @@ export function MonthPicker({ month, year, onChange }) {
     else onChange(month - 1, year)
   }
   const next = () => {
-    const now = new Date()
-    if (year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1)) return
+    const { year: nowYear, month: nowMonth } = nowJakarta()
+    if (year > nowYear || (year === nowYear && month >= nowMonth)) return
     if (month === 12) onChange(1, year + 1)
     else onChange(month + 1, year)
   }
 
   const isCurrentMonth = () => {
-    const now = new Date()
-    return month === now.getMonth() + 1 && year === now.getFullYear()
+    const { year: nowYear, month: nowMonth } = nowJakarta()
+    return month === nowMonth && year === nowYear
   }
 
   return (
     <div className="flex items-center gap-2">
       <button
         onClick={prev}
-        className="p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        className="group p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         aria-label="Previous month"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="transition-transform duration-150 ease-out group-hover:-translate-x-0.5">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
@@ -34,10 +36,10 @@ export function MonthPicker({ month, year, onChange }) {
       <button
         onClick={next}
         disabled={isCurrentMonth()}
-        className="p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="group p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="Next month"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5">
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>

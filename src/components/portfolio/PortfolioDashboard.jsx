@@ -264,13 +264,15 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                 ))}
               </div>
 
-              {chartTab === 'performance' ? (
-                <PortfolioChart userId={userId} />
-              ) : (
-                Object.keys(allocationByType).length > 0
-                  ? <AllocationChart allocationByType={allocationByType} />
-                  : <p className="text-[11px] text-surface-400 dark:text-surface-500 text-center py-6">No holdings to show</p>
-              )}
+              <div key={chartTab} className="tab-fade-in">
+                {chartTab === 'performance' ? (
+                  <PortfolioChart userId={userId} />
+                ) : (
+                  Object.keys(allocationByType).length > 0
+                    ? <AllocationChart allocationByType={allocationByType} />
+                    : <p className="text-[11px] text-surface-400 dark:text-surface-500 text-center py-6">No holdings to show</p>
+                )}
+              </div>
             </div>
           </div>
 

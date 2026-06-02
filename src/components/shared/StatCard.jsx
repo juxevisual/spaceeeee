@@ -12,7 +12,7 @@ export function StatCard({ label, value, sub, trend, loading }) {
       <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-1.5 leading-none">
         {label}
       </p>
-      <p className="text-xl font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.01em] leading-tight">
+      <p key={value} className="text-xl font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.01em] leading-tight stat-value-in">
         {value}
       </p>
       {sub && (

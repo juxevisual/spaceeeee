@@ -4,7 +4,7 @@ import { StatCard } from '../shared/StatCard'
 import { ExpenseTimeline } from './ExpenseTimeline'
 import { FamilyTimeline } from './FamilyTimeline'
 import { ExpenseForm } from './ExpenseForm'
-import { formatCompact, CATEGORY_LABELS } from '../../lib/format'
+import { formatCompact, CATEGORY_LABELS, nowJakarta } from '../../lib/format'
 import { useExpenses } from '../../hooks/useExpenses'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 import { supabase } from '../../lib/supabase'
@@ -43,9 +43,9 @@ function TabBar({ active, onChange }) {
 }
 
 export function ExpenseDashboard({ user }) {
-  const now = new Date()
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const [year, setYear] = useState(now.getFullYear())
+  const { month: nowMonth, year: nowYear } = nowJakarta()
+  const [month, setMonth] = useState(nowMonth)
+  const [year, setYear] = useState(nowYear)
   const [tab, setTab] = useState('personal')
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
@@ -148,29 +148,27 @@ export function ExpenseDashboard({ user }) {
         </div>
       )}
 
-      {/* Timeline — crossfade on tab switch */}
-      <div className="transition-opacity duration-150">
-      {isFamily ? (
-        <FamilyTimeline
-          expenses={familyExpenses}
-          monthlyTotal={familyTotal}
-          onEdit={handleEdit}
-          onDelete={deleteExpense}
-          loading={loading}
-          userNames={userNames}
-        />
-      ) : (
-        <ExpenseTimeline
-          expenses={expenses}
-          byCategory={byCategory}
-          monthlyTotal={monthlyTotal}
-          onEdit={handleEdit}
-          onDelete={deleteExpense}
-          loading={loading}
-          customCategories={customCategories}
-        />
-      )}
-
+      <div key={tab} className="tab-fade-in">
+        {isFamily ? (
+          <FamilyTimeline
+            expenses={familyExpenses}
+            monthlyTotal={familyTotal}
+            onEdit={handleEdit}
+            onDelete={deleteExpense}
+            loading={loading}
+            userNames={userNames}
+          />
+        ) : (
+          <ExpenseTimeline
+            expenses={expenses}
+            byCategory={byCategory}
+            monthlyTotal={monthlyTotal}
+            onEdit={handleEdit}
+            onDelete={deleteExpense}
+            loading={loading}
+            customCategories={customCategories}
+          />
+        )}
       </div>
 
       {formOpen && (

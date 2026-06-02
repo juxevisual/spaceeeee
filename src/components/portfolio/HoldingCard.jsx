@@ -108,7 +108,7 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
                 <div className="col-span-2">
                   <span className="text-surface-400 dark:text-surface-500">Last updated</span>
                   <p className="font-medium text-surface-700 dark:text-surface-300 mt-0.5">
-                    {new Date(holding.last_updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(holding.last_updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                   </p>
                 </div>
               </div>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getAllCategories } from '../../lib/format'
+import { getAllCategories, todayJakarta } from '../../lib/format'
+import { useDialogClose } from '../shared/Dialog'
 import { useToast } from '../shared/Toast'
 import { Dialog } from '../shared/Dialog'
 import { Icon } from '../shared/Icon'
 import { TypeCreator } from '../shared/TypeCreator'
 import { NumberInput } from '../shared/NumberInput'
-const today = () => new Date().toISOString().split('T')[0]
+const today = () => todayJakarta()
 const empty = { amount: '', category: 'makan_minuman', custom_label: '', description: '', date: today(), type: 'personal' }
 
 const CAT_THRESHOLD = 9
@@ -13,6 +14,8 @@ const CAT_SHOW = 6
 
 export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType = 'personal', customCategories = [], onAddCategory }) {
   const toast = useToast()
+  const dialogClose = useDialogClose()
+  const close = dialogClose ?? onClose
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [categoryExpanded, setCategoryExpanded] = useState(false)
   const allCategories = getAllCategories(customCategories)
@@ -77,7 +80,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
           {initial ? 'Edit expense' : 'Add expense'}
         </h2>
         <button
-          onClick={onClose}
+          onClick={close}
           aria-label="Close dialog"
           className="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         >
@@ -253,7 +256,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
         <div className="flex gap-2 pt-1">
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             className="flex-1 py-2 text-sm font-medium rounded-lg border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
           >
             Cancel
