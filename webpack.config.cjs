@@ -58,7 +58,10 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new HtmlWebpackPlugin({ template: './index.html', inject: 'body' }),
-      new CopyPlugin({ patterns: [{ from: 'src/assets/logo.ico', to: 'favicon.ico' }] }),
+      new CopyPlugin({ patterns: [
+        { from: 'src/assets/logo.ico', to: 'favicon.ico' },
+        { from: 'src/assets/apple-touch-icon.png', to: 'apple-touch-icon.png' },
+      ]}),
       new webpack.DefinePlugin(
         Object.fromEntries(
           Object.entries({ ...envVars, ...process.env })
