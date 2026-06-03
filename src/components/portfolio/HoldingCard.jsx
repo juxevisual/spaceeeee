@@ -1,11 +1,49 @@
 import { useState } from 'react'
 import { formatIDR, formatCompact, formatPct, formatQuantity, formatRelativeTime, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS_MAP } from '../../lib/format'
 
-export function HoldingCard({ holding, onEdit, onDelete, hideValues = false }) {
+function parseDotSep(str) {
+  return Number(String(str).replace(/\./g, '').replace(/,/g, '')) || 0
+}
+function formatDotSep(n) {
+  return Math.round(n).toLocaleString('id-ID')
+}
+
+export function HoldingCard({ holding, onEdit, onDelete, onClose, hideValues = false }) {
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [closeInput, setCloseInput] = useState('')
+  const [closeLoading, setCloseLoading] = useState(false)
+
+  const isCash = holding.asset_type === 'cash'
+
+  const openClosePanel = () => {
+    setConfirming(false)
+    setCloseInput(formatDotSep(holding.currentValue))
+    setClosing(true)
+  }
+
+  const handleCloseInputChange = (e) => {
+    const raw = e.target.value.replace(/[^\d]/g, '')
+    setCloseInput(raw ? Number(raw).toLocaleString('id-ID') : '')
+  }
+
+  const closeProceeds = parseDotSep(closeInput)
+  const closeDelta = closeProceeds - holding.costBasis
+  const closeDeltaPct = holding.costBasis > 0 ? (closeDelta / holding.costBasis) * 100 : 0
+
+  const handleConfirmClose = async () => {
+    if (closeProceeds <= 0 || !onClose) return
+    setCloseLoading(true)
+    await onClose(holding.id, closeProceeds)
+    setCloseLoading(false)
+    setClosing(false)
+  }
 
   const isGain = holding.gainLoss >= 0
+  const daysSinceUpdate = Math.floor((Date.now() - new Date(holding.last_updated)) / 86400000)
+  const isStale = daysSinceUpdate >= 90 && isFinite(holding.gainLossPct) && Math.abs(holding.gainLossPct) < 2
+
   // Use pre-resolved typeLabel/typeColor from hook (supports custom types)
   const typeColor = holding.typeColor || ASSET_TYPE_COLORS_MAP[holding.asset_type]
   const typeLabel = holding.typeLabel || ASSET_TYPE_LABELS[holding.asset_type] || holding.asset_type
@@ -51,6 +89,12 @@ export function HoldingCard({ holding, onEdit, onDelete, hideValues = false }) {
                 )}
                 <span className="mx-1.5 text-surface-200 dark:text-surface-700">·</span>
                 <span className="text-[11px]">{formatRelativeTime(holding.last_updated)}</span>
+                {isStale && !hideValues && (
+                  <>
+                    <span className="mx-1.5 text-surface-200 dark:text-surface-700">·</span>
+                    <span className="text-[11px] text-surface-300 dark:text-surface-600">flat</span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -115,37 +159,96 @@ export function HoldingCard({ holding, onEdit, onDelete, hideValues = false }) {
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => onEdit(holding)}
-                  className="flex-1 py-1.5 text-xs font-semibold rounded-full border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-                >
-                  Edit
-                </button>
-                {confirming ? (
-                  <div className="flex-1 flex gap-1">
+              {closing ? (
+                <div className="mt-4 pt-4 border-t border-black/[0.04] dark:border-white/[0.04] space-y-3">
+                  <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Close position</p>
+
+                  <div>
+                    <label className="text-[11px] text-surface-400 dark:text-surface-500 mb-1 block">Proceeds (IDR)</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2">
+                      <span className="text-xs text-surface-400 dark:text-surface-500 flex-shrink-0">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={closeInput}
+                        onChange={handleCloseInputChange}
+                        className="flex-1 text-xs font-semibold text-surface-900 dark:text-surface-100 bg-transparent outline-none tabular-nums"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {closeProceeds > 0 && (
+                    <p className={`text-xs font-semibold tabular-nums ${closeDelta >= 0 ? 'text-gain-dark dark:text-gain' : 'text-loss-dark dark:text-loss'}`}>
+                      {closeDelta >= 0 ? '+' : ''}{formatCompact(closeDelta)}
+                      <span className="font-normal opacity-70 ml-1.5">({closeDelta >= 0 ? '+' : ''}{closeDeltaPct.toFixed(1)}%)</span>
+                    </p>
+                  )}
+
+                  <p className="text-[11px] text-surface-400 dark:text-surface-500">
+                    Proceeds go to Cash on {holding.platform}
+                  </p>
+
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => onDelete(holding.id)}
-                      className="flex-1 py-1.5 text-xs font-semibold rounded-full bg-loss text-white hover:opacity-90 transition-opacity"
+                      onClick={handleConfirmClose}
+                      disabled={closeProceeds <= 0 || closeLoading}
+                      style={{ backgroundColor: 'oklch(0.60 0.26 280)' }}
+                      className="flex-1 py-1.5 text-xs font-semibold rounded-full text-white disabled:opacity-40 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
                     >
-                      Confirm
+                      {closeLoading ? 'Closing…' : 'Confirm close'}
                     </button>
                     <button
-                      onClick={() => setConfirming(false)}
-                      className="py-1.5 px-3 text-xs font-semibold rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all duration-200"
+                      onClick={() => setClosing(false)}
+                      className="py-1.5 px-4 text-xs font-semibold rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all duration-200"
                     >
                       Cancel
                     </button>
                   </div>
-                ) : (
+                </div>
+              ) : (
+                <div className="flex gap-2 mt-4">
                   <button
-                    onClick={() => setConfirming(true)}
-                    className="py-1.5 px-4 text-xs font-semibold rounded-full text-loss hover:bg-loss-light dark:hover:bg-loss/10 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                    onClick={() => onEdit(holding)}
+                    className="flex-1 py-1.5 text-xs font-semibold rounded-full border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
                   >
-                    Delete
+                    Edit
                   </button>
-                )}
-              </div>
+                  {confirming ? (
+                    <div className="flex-1 flex gap-1">
+                      <button
+                        onClick={() => onDelete(holding.id)}
+                        className="flex-1 py-1.5 text-xs font-semibold rounded-full bg-loss text-white hover:opacity-90 transition-opacity"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirming(false)}
+                        className="py-1.5 px-3 text-xs font-semibold rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setConfirming(true)}
+                        className="py-1.5 px-4 text-xs font-semibold rounded-full text-loss hover:bg-loss-light dark:hover:bg-loss/10 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                      >
+                        Delete
+                      </button>
+                      {!isCash && (
+                        <button
+                          onClick={openClosePanel}
+                          className="ml-auto py-1.5 px-3 text-xs font-medium rounded-full text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                        >
+                          Close position
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

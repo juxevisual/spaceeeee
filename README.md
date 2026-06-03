@@ -6,6 +6,7 @@ A private personal finance web app for two users — track investment portfolios
 
 **Portfolio tracker**
 - Holdings grouped by platform with expandable double-bezel cards
+- Search, sort (6 options), and filter by asset type / platform / currency
 - Two input modes: by units (qty × price) or by total value (invested + current)
 - Multi-currency: any ISO 4217 currency with auto exchange rates (fetched daily, no API key needed)
 - Asset types: Mutual Fund, Stocks, Gold, Crypto, Deposit, Cash, Others — plus custom types with custom icons and colors
@@ -20,6 +21,8 @@ A private personal finance web app for two users — track investment portfolios
 - Chronological timeline with category color coding
 - Category summary bars with relative spend percentages
 - Month navigation
+- **Spending pace** (current month only) — "vs last month" delta (same-day range comparison) and projected end-of-month total based on daily average
+- **Month review** (past months) — bottom sheet with total spent, delta vs prior month, top 3 categories, biggest day, biggest expense, and personal/family split
 
 **Together view**
 - Partner picker — choose which partner to compare with

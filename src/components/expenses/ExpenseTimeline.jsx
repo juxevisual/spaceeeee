@@ -88,7 +88,7 @@ function DayHeader({ dateStr, todayStr }) {
   )
 }
 
-export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
+export function CategorySummaryBar({ byCategory, total, categoryLookup = {}, velocityByCategory = null, currentFrequency = null, avgFrequencyByCategory = null }) {
   const entries = Object.entries(byCategory)
     .filter(([, v]) => v > 0)
     .sort(([, a], [, b]) => b - a)
@@ -102,12 +102,36 @@ export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
         const catInfo = categoryLookup[cat] || {}
         const dot = catInfo.color || CATEGORY_COLORS[cat] || 'oklch(0.55 0.08 60)'
         const catLabel = catInfo.label || CATEGORY_LABELS[cat] || cat
+
+        let velocityGlyph = null
+        if (velocityByCategory !== null) {
+          const last = velocityByCategory[cat]
+          if (last > 0) {
+            const deltaPct = (amount - last) / last * 100
+            if (deltaPct > 10) {
+              velocityGlyph = <span className="text-[10px] font-semibold text-loss-dark dark:text-loss leading-none" aria-label="spending faster than last month">↑</span>
+            } else if (deltaPct < -10) {
+              velocityGlyph = <span className="text-[10px] font-semibold text-gain-dark dark:text-gain leading-none" aria-label="spending slower than last month">↓</span>
+            }
+          }
+        }
+
+        const currentCount = currentFrequency?.[cat] ?? null
+        const avgCount = avgFrequencyByCategory?.[cat] ?? null
+        const showFreq = currentCount !== null && currentCount >= 2
+
         return (
           <div key={cat}>
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ background: dot }} />
-                <span className="text-xs text-surface-600 dark:text-surface-400">{catLabel}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+                <span className="text-xs text-surface-600 dark:text-surface-400 truncate">{catLabel}</span>
+                {velocityGlyph}
+                {showFreq && (
+                  <span className="text-[10px] text-surface-400 dark:text-surface-500 flex-shrink-0" aria-label={`${currentCount} entries this month${avgCount ? `, average ${avgCount}` : ''}`}>
+                    {currentCount}×{avgCount !== null && avgCount !== currentCount ? ` avg ${avgCount}` : ''}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-surface-400 dark:text-surface-500 tabular-nums">{pct.toFixed(0)}%</span>
@@ -127,7 +151,7 @@ export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
   )
 }
 
-export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, onDelete, loading, customCategories = [] }) {
+export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, onDelete, loading, customCategories = [], velocityByCategory = null, currentFrequency = null, avgFrequencyByCategory = null }) {
   const categoryLookup = Object.fromEntries(
     getAllCategories(customCategories).map(c => [c.key, c])
   )
@@ -173,7 +197,7 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
       {/* Category summary */}
       <div className="pb-5 mb-2 border-b border-surface-100 dark:border-surface-800">
         <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-3">By category</p>
-        <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} categoryLookup={categoryLookup} />
+        <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} categoryLookup={categoryLookup} velocityByCategory={velocityByCategory} currentFrequency={currentFrequency} avgFrequencyByCategory={avgFrequencyByCategory} />
       </div>
 
       {/* Day-grouped timeline */}

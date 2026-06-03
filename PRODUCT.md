@@ -37,8 +37,8 @@ product
 
 ## Modules
 
-1. **Portfolio Tracker** (`/portfolio`) — holdings grouped by platform, performance chart, allocation donut, multi-currency support with auto exchange rates
-2. **Expense Tracker** (`/expenses`) — personal and family expense tabs, timeline with category colors, category summary bars, month navigation
+1. **Portfolio Tracker** (`/portfolio`) — holdings grouped by platform, search/sort/filter controls, performance chart, allocation donut, multi-currency support with auto exchange rates
+2. **Expense Tracker** (`/expenses`) — personal and family expense tabs, timeline with category colors, category summary bars, month navigation, spending pace (current month: vs-last-month delta + projected total), month review sheet (past months: summary, top categories, highlights)
 3. **Together View** (`/combined`) — both users' personal + family expenses merged, partner picker, comparison charts, 6-month trend
 
 ## Asset Types (built-in, English labels)

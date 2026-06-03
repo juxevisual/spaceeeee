@@ -18,13 +18,20 @@ function ExchangeRatesPanel({ holdings, exchangeRates, ratesUpdatedAt, onRefresh
 
   if (usedCurrencies.length === 0) return null
 
+  const ratesStale = ratesUpdatedAt && (Date.now() - new Date(ratesUpdatedAt).getTime() > 24 * 60 * 60 * 1000)
+
   return (
     <div className="border-t border-surface-100 dark:border-surface-800/60 pt-3 mt-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Rates</p>
         <div className="flex items-center gap-2">
           {ratesUpdatedAt && (
-            <span className="text-[10px] text-surface-300 dark:text-surface-600">{formatRelativeTime(ratesUpdatedAt)}</span>
+            <span
+              className="text-[10px] text-surface-300 dark:text-surface-600"
+              style={ratesStale ? { color: 'oklch(0.72 0.15 75)' } : {}}
+            >
+              {ratesStale ? 'outdated' : formatRelativeTime(ratesUpdatedAt)}
+            </span>
           )}
           <button
             onClick={onRefresh}
@@ -70,7 +77,7 @@ function EyeIcon({ closed }) {
   )
 }
 
-export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate }) {
+export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onClose, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate }) {
   const [hideValues, setHideValues] = useState(() => localStorage.getItem('portfolio_private_mode') === 'true')
   const toggleHideValues = () => setHideValues(v => {
     const next = !v
@@ -193,6 +200,11 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
 
   // Auto-expand sections only when search or filters are active
   const forceExpand = !!(search || filterTypes.length || filterPlatforms.length || filterCurrencies.length)
+
+  const staleCount = useMemo(() => holdings.filter(h => {
+    const days = Math.floor((Date.now() - new Date(h.last_updated)) / 86400000)
+    return days >= 90 && isFinite(h.gainLossPct) && Math.abs(h.gainLossPct) < 2
+  }).length, [holdings])
 
   const hasActiveControls = !!(search || filterTypes.length || filterPlatforms.length || filterCurrencies.length)
   const clearFilters = () => { setSearch(''); setFilterTypes([]); setFilterPlatforms([]); setFilterCurrencies([]) }
@@ -361,6 +373,12 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
             </div>
           ) : (
             <>
+              {staleCount > 0 && (
+                <div className="flex items-center gap-2 mb-3 text-[11px] text-surface-400 dark:text-surface-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-surface-300 dark:bg-surface-600 flex-shrink-0" aria-hidden="true" />
+                  {staleCount} holding{staleCount !== 1 ? 's' : ''} unchanged for 90+ days
+                </div>
+              )}
               <HoldingsControls
                 search={search} onSearch={setSearch}
                 sortBy={sortBy} onSort={setSortBy}
@@ -388,7 +406,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 mt-6">
                   {sortedPlatforms.map((platform, i) => (
                     <PlatformSection
                       key={platform}
@@ -397,6 +415,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                       holdings={filteredPlatformGroups[platform]}
                       onEdit={handleEdit}
                       onDelete={onDelete}
+                      onClose={onClose}
                       onAddForPlatform={handleAddForPlatform}
                       forceOpen={forceExpand}
                       hideValues={hideValues}

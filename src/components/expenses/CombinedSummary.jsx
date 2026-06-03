@@ -167,37 +167,34 @@ export function CombinedSummary({ user }) {
   ).sort(([, a], [, b]) => b - a)[0]
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      {/* Together indicator strip */}
-      {myName && selectedPartner && (
-        <div className="flex items-center gap-3 -mb-2">
-          <div className="flex -space-x-2">
-            <div className="w-7 h-7 rounded-full bg-primary-500 ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white leading-none">{myName[0]?.toUpperCase()}</span>
-            </div>
-            <div className="w-7 h-7 rounded-full ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'oklch(0.64 0.19 150)' }}>
-              <span className="text-[10px] font-bold text-white leading-none">{partnerName[0]?.toUpperCase()}</span>
-            </div>
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* Header: avatar strip + month/partner picker as one composed unit */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {myName && selectedPartner && (
+              <div className="flex -space-x-2 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-primary-500 ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white leading-none">{myName[0]?.toUpperCase()}</span>
+                </div>
+                <div className="w-7 h-7 rounded-full ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center" style={{ backgroundColor: 'oklch(0.64 0.19 150)' }}>
+                  <span className="text-[10px] font-bold text-white leading-none">{partnerName[0]?.toUpperCase()}</span>
+                </div>
+              </div>
+            )}
+            <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
           </div>
-          <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
-            {myName} <span className="text-surface-300 dark:text-surface-600">&amp;</span> {partnerName}
-          </span>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 min-w-0">
-        <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
-        <div className="flex-shrink-0">
-          <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
+          <div className="flex-shrink-0">
+            <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
+          </div>
         </div>
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-6 border-b border-surface-100 dark:border-surface-800">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 pb-6 border-b border-surface-100 dark:border-surface-800">
         {[
           {
-            label: 'Personal total',
+            label: 'Combined personal',
             value: loading ? '—' : formatCompact(combinedTotal),
             sub: familyTotal > 0 ? `+${formatCompact(familyTotal)} family` : undefined,
           },
@@ -226,7 +223,7 @@ export function CombinedSummary({ user }) {
       </div>
 
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-loss-light dark:bg-loss/10 border border-loss/20 text-xs text-loss">
+        <div className="mb-5 px-4 py-3 rounded-xl bg-loss-light dark:bg-loss/10 border border-loss/20 text-xs text-loss">
           Failed to load data. Check your connection and try refreshing.
         </div>
       )}

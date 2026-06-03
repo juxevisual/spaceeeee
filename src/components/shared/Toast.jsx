@@ -5,11 +5,16 @@ const ToastContext = createContext(null)
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
 
-  const show = useCallback((message, type = 'success') => {
+  const show = useCallback((message, options = {}) => {
+    // Backward compat: show(msg, 'error') still works
+    const opts = typeof options === 'string' ? { type: options } : options
+    const { type = 'success', action } = opts
+
+    const duration = action ? 5000 : 2350
     const id = Date.now()
-    setToasts(t => [...t, { id, message, type, exiting: false }])
-    setTimeout(() => setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x)), 2350)
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 2500)
+    setToasts(t => [...t, { id, message, type, action, exiting: false }])
+    setTimeout(() => setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x)), duration)
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), duration + 200)
   }, [])
 
   return (
@@ -19,13 +24,26 @@ export function ToastProvider({ children }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`${t.exiting ? 'toast-exit' : 'toast-enter'} px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+            className={`${t.exiting ? 'toast-exit' : 'toast-enter'} flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+              t.action ? 'pointer-events-auto' : ''
+            } ${
               t.type === 'error'
                 ? 'bg-loss text-white'
                 : 'bg-surface-900 dark:bg-surface-100 text-surface-50 dark:text-surface-900'
             }`}
           >
-            {t.message}
+            <span>{t.message}</span>
+            {t.action && (
+              <button
+                onClick={() => {
+                  setToasts(ts => ts.filter(x => x.id !== t.id))
+                  t.action.onClick()
+                }}
+                className="text-xs font-bold underline opacity-70 hover:opacity-100 transition-opacity flex-shrink-0"
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

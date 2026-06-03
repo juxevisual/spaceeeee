@@ -56,6 +56,8 @@ src/
       AllocationChart.jsx
       HoldingCard.jsx
       HoldingForm.jsx
+      HoldingsControls.jsx       (search + sort + filter bar for holdings)
+      DeadWeightFlag             (inline in HoldingCard + PortfolioDashboard strip)
       PlatformSection.jsx
       PortfolioChart.jsx         (performance area chart)
       PortfolioDashboard.jsx
@@ -65,6 +67,8 @@ src/
       ExpenseForm.jsx
       ExpenseTimeline.jsx
       FamilyTimeline.jsx
+      MonthReview.jsx            (bottom-sheet month summary for past months)
+      SpendingPace.jsx           (current-month pace + vs-last-month delta)
       charts/
         CategoryChart.jsx
         ComparisonChart.jsx
@@ -96,6 +100,8 @@ src/
     useChartColors.js            (dark-mode aware chart tick colors)
     useCountUp.js                (animated number counter)
     useExpenses.js
+    useCategoryVelocity.js       (last-month per-category spend for velocity arrows)
+    usePace.js                   (last-month partial spend for SpendingPace)
     usePortfolio.js
     useScrollReveal.js           (IntersectionObserver reveal)
   App.jsx
@@ -257,6 +263,23 @@ Mobile: single column, left sidebar stacks above holdings.
 
 ### Holdings (right column)
 
+**Dead weight strip** (above HoldingsControls, only when stale holdings exist):
+- A single quiet line: "N holdings unchanged for 90+ days"
+- Condition: `|gainLossPct| < 2%` AND `last_updated` is 90+ days ago AND `gainLossPct` is finite
+- Purely informational — no action, no color alarm, surface-400 text
+
+**Dead weight card indicator** (inline on HoldingCard):
+- When a holding meets the stale condition, the metadata line appends `· flat` in surface-300
+- Hidden when private mode (hideValues) is active
+
+**HoldingsControls bar** (above holdings list):
+- Search input (filters by asset name, platform, or type)
+- Sort dropdown: Value high→low, Value low→high, Gain best→worst, Gain worst→best, Name A→Z, Recently updated
+- Filter panel (collapsible): filter by asset type, platform, currency — shown as pill toggles; only shown when >1 unique value exists for that dimension
+- Active filter chips with individual remove + "Clear all"
+- Result count shown when search/filters are active
+
+**Holdings list:**
 - Grouped by platform — each platform in a double-bezel collapsible section
 - Platform header: colored initial badge, platform name, holding count, total IDR value
 - Each holding: double-bezel card, expandable
@@ -303,8 +326,34 @@ For `input_mode = 'value'`: quantity is stored as 1, avg_buy_price = total inves
 
 ### Header
 
-- Month picker (left) + Tab switcher: **Personal** / **Family** + Add button (right)
+- Month picker (left); when viewing a past month with any expenses, a **"Review"** button appears inline → opens MonthReview sheet
+- Tab switcher: **Personal** / **Family** + Add button (right)
 - Tab active states use inline `style` for color (Tailwind purge limitation)
+
+### Category velocity
+
+Shown only on the Personal tab for the current month, as `↑` / `↓` glyphs next to each category label in the summary bars.
+
+- Fetched by `useCategoryVelocity` — same day-clamped range logic as `usePace`, but returns a `{ [category]: amount }` map for the previous month
+- `↑` (loss-color) = spending >10% faster than last month at this point
+- `↓` (gain-color) = spending >10% slower
+- No glyph = within ±10% (flat)
+- Hidden when tab is Family or viewing a past month
+
+### SpendingPace
+
+Shown only on the current month, between the stat strip and timeline:
+- **"vs last month"** — compares current spend-to-date against the same day range in the previous month (day-clamped for short months). Shows delta in IDR + percentage, red if higher, green if lower.
+- **"on pace for"** — daily average × days in month = projected end-of-month total.
+- Hidden when no spending yet. Fetched via `usePace` hook.
+
+### MonthReview (bottom sheet)
+
+Slide-up sheet (spring animation, Escape to dismiss, backdrop click to dismiss) for past months. Triggered by the "Review" button in the header. Contains:
+- **Total spent** — large display number; delta vs previous month in IDR + percentage (green/red)
+- Entry count + active days count
+- **Top 3 categories** — horizontal bars with color dots, %, IDR amount
+- **Highlights** — biggest spending day (date + amount), biggest single expense (description/category + amount), personal vs family split (when both > 0)
 
 ### Personal tab
 
@@ -418,6 +467,28 @@ All chart axes use `useChartColors()` hook which switches tick/cursor colors bas
 //   monthOverMonth,   // async fn returning 6-month data in single query
 //   refetch
 // }
+```
+
+### `useCategoryVelocity.js`
+```js
+// useCategoryVelocity(user, month, year)
+// → { lastMonthByCategory, loading }
+//
+// Only active on the current month. Fetches personal expenses from the previous
+// month up to the same day as today (day-clamped). Returns { [category]: total }
+// for the previous month's same-day range. Used by CategorySummaryBar to render
+// velocity arrows (↑/↓) per category.
+```
+
+### `usePace.js`
+```js
+// usePace(user, month, year, type = 'personal')
+// → { lastMonthPartial, loading }
+//
+// Only active when viewing the current month.
+// Fetches sum of expenses from the previous month up to the same day as today
+// (day-clamped to handle short months, e.g. March 31 → Feb 28).
+// Used by SpendingPace to compute the "vs last month" delta.
 ```
 
 ---

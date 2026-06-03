@@ -133,6 +133,55 @@ export function usePortfolio(user) {
     return { error }
   }, [fetchData])
 
+  const closeHolding = useCallback(async (holdingId, proceedsIDR) => {
+    const raw = holdings.find(h => h.id === holdingId)
+    if (!raw) return { error: new Error('Holding not found') }
+
+    const now = new Date().toISOString()
+
+    // Find existing IDR value-mode cash holding on the same platform
+    const existingCash = holdings.find(h =>
+      h.id !== holdingId &&
+      h.platform === raw.platform &&
+      h.asset_type === 'cash' &&
+      h.currency === 'IDR' &&
+      h.input_mode === 'value'
+    )
+
+    let mergeError = null
+    if (existingCash) {
+      const { error } = await supabase
+        .from('portfolio_entries')
+        .update({
+          avg_buy_price: existingCash.avg_buy_price + proceedsIDR,
+          current_price: existingCash.current_price + proceedsIDR,
+          last_updated: now,
+        })
+        .eq('id', existingCash.id)
+      mergeError = error
+    } else {
+      const { error } = await supabase.from('portfolio_entries').insert({
+        user_id: user.id,
+        platform: raw.platform,
+        asset_name: 'Cash',
+        asset_type: 'cash',
+        quantity: 1,
+        avg_buy_price: proceedsIDR,
+        current_price: proceedsIDR,
+        currency: 'IDR',
+        input_mode: 'value',
+        last_updated: now,
+      })
+      mergeError = error
+    }
+
+    if (mergeError) return { error: mergeError }
+
+    const { error: delError } = await supabase.from('portfolio_entries').delete().eq('id', holdingId)
+    if (!delError) fetchData(true)
+    return { error: delError }
+  }, [user, holdings, fetchData])
+
   const addAssetType = useCallback(async (type) => {
     const current = settings.custom_asset_types || []
     const updated = [...current, type]
@@ -184,6 +233,7 @@ export function usePortfolio(user) {
     addHolding,
     updateHolding,
     deleteHolding,
+    closeHolding,
     updateUsdRate,
     addCurrencyRate,
     refreshRates,

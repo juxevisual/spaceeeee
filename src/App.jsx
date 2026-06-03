@@ -5,6 +5,8 @@ import { Login } from './pages/Login'
 import { Portfolio } from './pages/Portfolio'
 import { Expenses } from './pages/Expenses'
 import { Combined } from './pages/Combined'
+import { Notes } from './pages/Notes'
+import { Dates } from './pages/Dates'
 import { ToastProvider } from './components/shared/Toast'
 import { supabase } from './lib/supabase'
 import { useEffect, useState } from 'react'
@@ -38,6 +40,8 @@ function ProtectedLayout({ user, onSignOut }) {
           <Route path="/portfolio" element={<Portfolio user={user} />} />
           <Route path="/expenses" element={<Expenses user={user} />} />
           <Route path="/combined" element={<Combined user={user} />} />
+          <Route path="/notes" element={<Notes user={user} />} />
+          <Route path="/dates" element={<Dates user={user} />} />
           <Route path="*" element={<Navigate to="/portfolio" replace />} />
         </Routes>
       </main>

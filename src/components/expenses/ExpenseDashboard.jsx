@@ -4,9 +4,13 @@ import { StatCard } from '../shared/StatCard'
 import { ExpenseTimeline } from './ExpenseTimeline'
 import { FamilyTimeline } from './FamilyTimeline'
 import { ExpenseForm } from './ExpenseForm'
-import { formatCompact, CATEGORY_LABELS, nowJakarta } from '../../lib/format'
+import { formatCompact, CATEGORY_LABELS, getAllCategories, nowJakarta } from '../../lib/format'
+import { useToast } from '../shared/Toast'
 import { useExpenses } from '../../hooks/useExpenses'
 import { usePace } from '../../hooks/usePace'
+import { useCategoryVelocity } from '../../hooks/useCategoryVelocity'
+import { useCategoryFrequency } from '../../hooks/useCategoryFrequency'
+import { useExpenseStreak } from '../../hooks/useExpenseStreak'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 import { supabase } from '../../lib/supabase'
 import { SpendingPace } from './SpendingPace'
@@ -46,6 +50,7 @@ function TabBar({ active, onChange }) {
 }
 
 export function ExpenseDashboard({ user }) {
+  const toast = useToast()
   const { month: nowMonth, year: nowYear } = nowJakarta()
   const [month, setMonth] = useState(nowMonth)
   const [year, setYear] = useState(nowYear)
@@ -71,7 +76,7 @@ export function ExpenseDashboard({ user }) {
 
   const {
     expenses, familyExpenses, familyTotal, loading, error,
-    addExpense, updateExpense, deleteExpense,
+    addExpense, updateExpense, deleteExpense: deleteExpenseRaw,
     monthlyTotal, byCategory,
   } = useExpenses(user, month, year)
 
@@ -86,6 +91,14 @@ export function ExpenseDashboard({ user }) {
   const { lastMonthPartial, loading: paceLoading } = usePace(
     user, month, year, tab === 'family' ? 'family' : 'personal'
   )
+  const { lastMonthByCategory } = useCategoryVelocity(user, month, year)
+  const { avgFrequencyByCategory } = useCategoryFrequency(user, month, year)
+
+  const currentFrequency = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + 1
+    return acc
+  }, {})
+  const { streak } = useExpenseStreak(user)
 
   const headerRef = useScrollReveal(0)
   const timelineRef = useScrollReveal(80)
@@ -98,6 +111,26 @@ export function ExpenseDashboard({ user }) {
       return acc
     }, {})
   ).sort(([, a], [, b]) => b - a)[0]
+
+  const deleteExpense = async (id) => {
+    const expToRestore = [...expenses, ...familyExpenses].find(e => e.id === id)
+    await deleteExpenseRaw(id)
+    toast('Expense deleted', {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (expToRestore) addExpense({
+            amount: expToRestore.amount,
+            category: expToRestore.category,
+            custom_label: expToRestore.custom_label,
+            description: expToRestore.description,
+            date: expToRestore.date,
+            type: expToRestore.type,
+          })
+        },
+      },
+    })
+  }
 
   const handleEdit = (entry) => {
     setEditTarget(entry)
@@ -114,18 +147,23 @@ export function ExpenseDashboard({ user }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-3xl mx-auto px-4 py-6">
       {/* Header — stacks on mobile, single row on sm+ */}
-      <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div className="flex items-center gap-1">
           <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
           {!isCurrentMonth && (expenses.length > 0 || familyExpenses.length > 0) && (
             <button
               onClick={() => setReviewOpen(true)}
-              className="text-[11px] font-semibold text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 px-2.5 py-1.5 rounded-full hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+              className="text-[11px] font-semibold text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 px-2.5 py-1.5 rounded-full hover:bg-primary-50 dark:hover:bg-surface-800 transition-colors"
             >
               Review
             </button>
+          )}
+          {isCurrentMonth && streak >= 2 && (
+            <span className="text-[11px] text-surface-400 dark:text-surface-500 pl-1" aria-label={`${streak}-day logging streak`}>
+              {streak}d streak
+            </span>
           )}
         </div>
         <div className="flex items-center justify-between sm:justify-end gap-2">
@@ -146,8 +184,8 @@ export function ExpenseDashboard({ user }) {
         </div>
       </div>
 
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 gap-3 pb-6 border-b border-surface-100 dark:border-surface-800">
+      {/* Stat strip — constrained width so cards don't stretch hollow on desktop */}
+      <div className="grid grid-cols-2 gap-3 max-w-xs sm:max-w-sm mb-3">
         <div className="p-1 rounded-[1.25rem] ring-1 ring-black/[0.06] dark:ring-white/[0.15] bg-black/[0.015] dark:bg-white/[0.04]">
           <div className="rounded-[calc(1.25rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] p-4">
             <StatCard
@@ -161,7 +199,11 @@ export function ExpenseDashboard({ user }) {
           <div className="rounded-[calc(1.25rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] p-4">
             <StatCard
               label="Top category"
-              value={loading ? '—' : (topCategory ? CATEGORY_LABELS[topCategory[0]] : '—')}
+              value={loading ? '—' : (topCategory ? (
+                getAllCategories(customCategories).find(c => c.key === topCategory[0])?.label ||
+                CATEGORY_LABELS[topCategory[0]] ||
+                topCategory[0]
+              ) : '—')}
               sub={loading ? undefined : (topCategory ? formatCompact(topCategory[1]) : undefined)}
               loading={loading}
             />
@@ -169,18 +211,22 @@ export function ExpenseDashboard({ user }) {
         </div>
       </div>
 
+      {/* SpendingPace anchored tightly to stats, generous gap before timeline */}
       {isCurrentMonth && (
-        <SpendingPace
-          currentTotal={displayedTotal}
-          lastMonthPartial={lastMonthPartial}
-          month={month}
-          year={year}
-          loading={loading || paceLoading}
-        />
+        <div className="mb-8 pb-6 border-b border-surface-100 dark:border-surface-800">
+          <SpendingPace
+            currentTotal={displayedTotal}
+            lastMonthPartial={lastMonthPartial}
+            month={month}
+            year={year}
+            loading={loading || paceLoading}
+          />
+        </div>
       )}
+      {!isCurrentMonth && <div className="mb-8 border-b border-surface-100 dark:border-surface-800" />}
 
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-loss-light dark:bg-loss/10 border border-loss/20 text-xs text-loss">
+        <div className="mb-5 px-4 py-3 rounded-xl bg-loss-light dark:bg-loss/10 border border-loss/20 text-xs text-loss">
           Failed to load expenses. Check your connection and try refreshing.
         </div>
       )}
@@ -204,6 +250,9 @@ export function ExpenseDashboard({ user }) {
             onDelete={deleteExpense}
             loading={loading}
             customCategories={customCategories}
+            velocityByCategory={tab === 'personal' ? lastMonthByCategory : null}
+            currentFrequency={tab === 'personal' ? currentFrequency : null}
+            avgFrequencyByCategory={tab === 'personal' ? avgFrequencyByCategory : null}
           />
         )}
       </div>

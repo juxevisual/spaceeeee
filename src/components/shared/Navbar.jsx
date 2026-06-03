@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { DarkModeToggle } from './DarkModeToggle'
 import { supabase } from '../../lib/supabase'
 import { useToast } from './Toast'
@@ -46,7 +46,7 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
         disabled={saving || !val.trim()}
         className="w-full mt-2 py-1.5 text-xs font-semibold rounded-full bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-40 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
       >
-        {saving ? 'Saving…' : 'Save'}
+        {saving ? 'Saving...' : 'Save'}
       </button>
     </div>
   )
@@ -55,7 +55,11 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
 export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpdated }) {
   const [showNameEdit, setShowNameEdit] = useState(false)
   const [displayName, setDisplayName] = useState(initialName || '')
+  const [showMore, setShowMore] = useState(false)
   const wrapRef = useRef(null)
+  const moreRef = useRef(null)
+  const location = useLocation()
+  const moreActive = ['/notes', '/dates'].includes(location.pathname)
 
   useEffect(() => { setDisplayName(initialName || '') }, [initialName])
 
@@ -65,6 +69,20 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showNameEdit])
+
+  useEffect(() => {
+    if (!showMore) return
+    const handler = (e) => { if (!moreRef.current?.contains(e.target)) setShowMore(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showMore])
+
+  useEffect(() => { setShowMore(false) }, [location.pathname])
+
+  const notesActive = location.pathname === '/notes'
+  const datesActive = location.pathname === '/dates'
+  const AMBER = 'oklch(0.58 0.18 75)'
+  const SKY   = 'oklch(0.54 0.18 220)'
 
   const pillLink = ({ isActive }) =>
     `px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
@@ -80,7 +98,18 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
         : 'text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 hover:bg-black/5 dark:hover:bg-white/5'
     }`
 
-  // Mobile-only bottom tab classes
+  const coloredLink = (color) => ({
+    className: ({ isActive }) =>
+      `px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        isActive
+          ? 'text-white'
+          : 'text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 hover:bg-black/5 dark:hover:bg-white/5'
+      }`,
+    style: ({ isActive }) => isActive
+      ? { backgroundColor: color, boxShadow: `0 2px 8px ${color}55` }
+      : {},
+  })
+
   const mobileTab = ({ isActive }) =>
     `flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
       isActive ? 'text-primary-500 dark:text-primary-400' : 'text-surface-400 dark:text-surface-500'
@@ -90,6 +119,8 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
     `flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
       isActive ? 'text-gain dark:text-gain' : 'text-surface-400 dark:text-surface-500'
     }`
+
+  const moreTabColor = notesActive ? AMBER : datesActive ? SKY : 'oklch(0.60 0.26 280)'
 
   const pillBase = 'ring-1 ring-black/[0.06] dark:ring-white/[0.14] bg-surface-50/92 dark:bg-surface-950/92 backdrop-blur-xl shadow-[0_2px_16px_rgba(0,0,0,0.07),_0_1px_3px_rgba(0,0,0,0.04)]'
 
@@ -107,11 +138,13 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
           spaceeeee
         </NavLink>
 
-        {/* Desktop nav "” hidden on mobile (shown md+) */}
+        {/* Desktop nav, hidden on mobile */}
         <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
           <NavLink to="/portfolio" className={pillLink}>Portfolio</NavLink>
           <NavLink to="/expenses" className={pillLink}>Expenses</NavLink>
           <NavLink to="/combined" className={togetherLink}>Together</NavLink>
+          <NavLink to="/notes" {...coloredLink(AMBER)}>Notes</NavLink>
+          <NavLink to="/dates" {...coloredLink(SKY)}>Dates</NavLink>
         </nav>
 
         {/* Spacer on mobile so actions go to the right */}
@@ -149,7 +182,6 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-surface-400 dark:text-surface-500 hover:text-loss dark:hover:text-loss hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
             <span className="hidden sm:inline">Sign out</span>
-            {/* Icon-only on mobile */}
             <svg className="sm:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
@@ -161,7 +193,7 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
 
       {/* Mobile-only nav tab pill (hidden md+) */}
       <nav
-        className={`pointer-events-auto md:hidden w-full max-w-3xl flex rounded-full overflow-hidden ${pillBase}`}
+        className={`pointer-events-auto md:hidden w-full max-w-3xl flex rounded-full ${pillBase}`}
         aria-label="Main navigation"
       >
         <NavLink to="/portfolio" className={mobileTab}>
@@ -182,8 +214,61 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
           </svg>
           <span>Together</span>
         </NavLink>
+        <div ref={moreRef} className="flex-1 relative">
+          <button
+            onClick={() => setShowMore(s => !s)}
+            aria-expanded={showMore}
+            aria-label="More pages"
+            className={`w-full flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              !moreActive && !showMore ? 'text-surface-400 dark:text-surface-500' : ''
+            }`}
+            style={moreActive || showMore ? { color: moreTabColor } : {}}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span>{notesActive ? 'Notes' : datesActive ? 'Dates' : 'More'}</span>
+          </button>
+          {showMore && (
+            <div className="absolute right-0 top-full mt-1 w-44 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl shadow-xl overflow-hidden z-50 popover-enter">
+              <NavLink
+                to="/notes"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
+                    isActive ? '' : 'text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+                  }`
+                }
+                style={({ isActive }) => isActive
+                  ? { color: AMBER, backgroundColor: 'oklch(0.96 0.06 75)' }
+                  : {}}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Notes
+              </NavLink>
+              <NavLink
+                to="/dates"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-t border-surface-100 dark:border-surface-800 ${
+                    isActive ? '' : 'text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+                  }`
+                }
+                style={({ isActive }) => isActive
+                  ? { color: SKY, backgroundColor: 'oklch(0.94 0.05 220)' }
+                  : {}}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Dates
+              </NavLink>
+            </div>
+          )}
+        </div>
       </nav>
     </div>
   )
 }
-
