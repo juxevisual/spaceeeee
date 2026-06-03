@@ -6,8 +6,11 @@ import { FamilyTimeline } from './FamilyTimeline'
 import { ExpenseForm } from './ExpenseForm'
 import { formatCompact, CATEGORY_LABELS, nowJakarta } from '../../lib/format'
 import { useExpenses } from '../../hooks/useExpenses'
+import { usePace } from '../../hooks/usePace'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 import { supabase } from '../../lib/supabase'
+import { SpendingPace } from './SpendingPace'
+import { MonthReview } from './MonthReview'
 
 function TabBar({ active, onChange }) {
   return (
@@ -48,6 +51,7 @@ export function ExpenseDashboard({ user }) {
   const [year, setYear] = useState(nowYear)
   const [tab, setTab] = useState('personal')
   const [formOpen, setFormOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
   const [userNames, setUserNames] = useState({})
@@ -77,6 +81,11 @@ export function ExpenseDashboard({ user }) {
       setUserNames(Object.fromEntries(data.map(d => [d.user_id, d.display_name || 'Unknown'])))
     })
   }, [])
+
+  const isCurrentMonth = month === nowMonth && year === nowYear
+  const { lastMonthPartial, loading: paceLoading } = usePace(
+    user, month, year, tab === 'family' ? 'family' : 'personal'
+  )
 
   const headerRef = useScrollReveal(0)
   const timelineRef = useScrollReveal(80)
@@ -108,7 +117,17 @@ export function ExpenseDashboard({ user }) {
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       {/* Header — stacks on mobile, single row on sm+ */}
       <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+        <div className="flex items-center gap-1">
+          <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+          {!isCurrentMonth && (expenses.length > 0 || familyExpenses.length > 0) && (
+            <button
+              onClick={() => setReviewOpen(true)}
+              className="text-[11px] font-semibold text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 px-2.5 py-1.5 rounded-full hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+            >
+              Review
+            </button>
+          )}
+        </div>
         <div className="flex items-center justify-between sm:justify-end gap-2">
           <TabBar active={tab} onChange={setTab} />
           <button
@@ -128,19 +147,37 @@ export function ExpenseDashboard({ user }) {
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 gap-4 pb-6 border-b border-surface-100 dark:border-surface-800">
-        <StatCard
-          label={isFamily ? 'Family total' : 'Personal total'}
-          value={loading ? '—' : formatCompact(displayedTotal)}
-          loading={loading}
-        />
-        <StatCard
-          label="Top category"
-          value={loading ? '—' : (topCategory ? CATEGORY_LABELS[topCategory[0]] : '—')}
-          sub={loading ? undefined : (topCategory ? formatCompact(topCategory[1]) : undefined)}
-          loading={loading}
-        />
+      <div className="grid grid-cols-2 gap-3 pb-6 border-b border-surface-100 dark:border-surface-800">
+        <div className="p-1 rounded-[1.25rem] ring-1 ring-black/[0.06] dark:ring-white/[0.15] bg-black/[0.015] dark:bg-white/[0.04]">
+          <div className="rounded-[calc(1.25rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] p-4">
+            <StatCard
+              label={isFamily ? 'Family total' : 'Personal total'}
+              value={loading ? '—' : formatCompact(displayedTotal)}
+              loading={loading}
+            />
+          </div>
+        </div>
+        <div className="p-1 rounded-[1.25rem] ring-1 ring-black/[0.06] dark:ring-white/[0.15] bg-black/[0.015] dark:bg-white/[0.04]">
+          <div className="rounded-[calc(1.25rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] p-4">
+            <StatCard
+              label="Top category"
+              value={loading ? '—' : (topCategory ? CATEGORY_LABELS[topCategory[0]] : '—')}
+              sub={loading ? undefined : (topCategory ? formatCompact(topCategory[1]) : undefined)}
+              loading={loading}
+            />
+          </div>
+        </div>
       </div>
+
+      {isCurrentMonth && (
+        <SpendingPace
+          currentTotal={displayedTotal}
+          lastMonthPartial={lastMonthPartial}
+          month={month}
+          year={year}
+          loading={loading || paceLoading}
+        />
+      )}
 
       {error && (
         <div className="px-4 py-3 rounded-xl bg-loss-light dark:bg-loss/10 border border-loss/20 text-xs text-loss">
@@ -170,6 +207,19 @@ export function ExpenseDashboard({ user }) {
           />
         )}
       </div>
+
+      {reviewOpen && (
+        <MonthReview
+          expenses={expenses}
+          familyExpenses={familyExpenses}
+          monthlyTotal={monthlyTotal}
+          familyTotal={familyTotal}
+          month={month}
+          year={year}
+          onClose={() => setReviewOpen(false)}
+          customCategories={customCategories}
+        />
+      )}
 
       {formOpen && (
         <ExpenseForm

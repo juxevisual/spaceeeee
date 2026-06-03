@@ -170,12 +170,16 @@ export function CombinedSummary({ user }) {
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {/* Together indicator strip */}
       {myName && selectedPartner && (
-        <div className="flex items-center gap-2 -mb-2">
-          <div className="flex -space-x-1" aria-hidden="true">
-            <div className="w-4 h-4 rounded-full bg-primary-500 ring-2 ring-surface-50 dark:ring-surface-950" />
-            <div className="w-4 h-4 rounded-full bg-gain ring-2 ring-surface-50 dark:ring-surface-950" />
+        <div className="flex items-center gap-3 -mb-2">
+          <div className="flex -space-x-2">
+            <div className="w-7 h-7 rounded-full bg-primary-500 ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px] font-bold text-white leading-none">{myName[0]?.toUpperCase()}</span>
+            </div>
+            <div className="w-7 h-7 rounded-full ring-2 ring-surface-50 dark:ring-surface-950 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'oklch(0.64 0.19 150)' }}>
+              <span className="text-[10px] font-bold text-white leading-none">{partnerName[0]?.toUpperCase()}</span>
+            </div>
           </div>
-          <span className="text-xs font-medium text-surface-400 dark:text-surface-500">
+          <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
             {myName} <span className="text-surface-300 dark:text-surface-600">&amp;</span> {partnerName}
           </span>
         </div>
@@ -190,31 +194,35 @@ export function CombinedSummary({ user }) {
       </div>
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-6 border-b border-surface-100 dark:border-surface-800">
-        <StatCard
-          label="Personal total"
-          value={loading ? '—' : formatCompact(combinedTotal)}
-          sub={familyTotal > 0 ? `+${formatCompact(familyTotal)} family` : undefined}
-          loading={loading}
-        />
-        <StatCard
-          label={myName}
-          value={loading ? '—' : formatCompact(myTotal)}
-          sub={combinedTotal > 0 ? `${((myTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined}
-          loading={loading}
-        />
-        <StatCard
-          label={partnerName}
-          value={loading ? '—' : formatCompact(partnerTotal)}
-          sub={combinedTotal > 0 ? `${((partnerTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined}
-          loading={loading}
-        />
-        <StatCard
-          label="Family"
-          value={loading ? '—' : (familyTotal > 0 ? formatCompact(familyTotal) : '—')}
-          sub={!loading && familyTotal > 0 ? `${familyExpenses.length} item${familyExpenses.length !== 1 ? 's' : ''}` : undefined}
-          loading={loading}
-        />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-6 border-b border-surface-100 dark:border-surface-800">
+        {[
+          {
+            label: 'Personal total',
+            value: loading ? '—' : formatCompact(combinedTotal),
+            sub: familyTotal > 0 ? `+${formatCompact(familyTotal)} family` : undefined,
+          },
+          {
+            label: myName,
+            value: loading ? '—' : formatCompact(myTotal),
+            sub: combinedTotal > 0 ? `${((myTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
+          },
+          {
+            label: partnerName,
+            value: loading ? '—' : formatCompact(partnerTotal),
+            sub: combinedTotal > 0 ? `${((partnerTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
+          },
+          {
+            label: 'Family',
+            value: loading ? '—' : (familyTotal > 0 ? formatCompact(familyTotal) : '—'),
+            sub: !loading && familyTotal > 0 ? `${familyExpenses.length} item${familyExpenses.length !== 1 ? 's' : ''}` : undefined,
+          },
+        ].map((card) => (
+          <div key={card.label} className="p-1 rounded-[1.25rem] ring-1 ring-black/[0.06] dark:ring-white/[0.15] bg-black/[0.015] dark:bg-white/[0.04]">
+            <div className="rounded-[calc(1.25rem-0.25rem)] bg-surface-50 dark:bg-surface-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] p-4">
+              <StatCard {...card} loading={loading} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {error && (
@@ -224,8 +232,15 @@ export function CombinedSummary({ user }) {
       )}
 
       {!selectedPartnerId && partners.length > 0 && (
-        <div className="py-10 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-          <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Choose a partner above to see the combined view</p>
+        <div className="py-16 flex flex-col items-center gap-4">
+          <div className="flex -space-x-2" aria-hidden="true">
+            <div className="w-10 h-10 rounded-full bg-surface-200 dark:bg-surface-700 ring-2 ring-surface-50 dark:ring-surface-950" />
+            <div className="w-10 h-10 rounded-full bg-surface-300 dark:bg-surface-600 ring-2 ring-surface-50 dark:ring-surface-950" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">Pick a partner above</p>
+            <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Your combined view will appear here</p>
+          </div>
         </div>
       )}
 

@@ -25,22 +25,30 @@ export function Login({ onSignIn, user }) {
 
       {/* Left panel — warm espresso brand */}
       <div className="hidden lg:flex lg:w-[44%] flex-col justify-between bg-surface-900 dark:bg-surface-950 relative overflow-hidden p-12">
-        {/* Electric indigo dot grid */}
+        {/* Architectural grid — horizontal + vertical rules with radial fade */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" preserveAspectRatio="none">
+          <defs>
+            <radialGradient id="gridFade" cx="35%" cy="72%" r="65%">
+              <stop offset="0%" stopColor="white" stopOpacity="1" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </radialGradient>
+            <mask id="gridMask">
+              <rect width="100%" height="100%" fill="url(#gridFade)" />
+            </mask>
+          </defs>
+          <g mask="url(#gridMask)" stroke="oklch(0.60 0.26 280)" strokeWidth="0.6" opacity="0.35">
+            {[10,20,30,40,50,60,70,80,90].map(p => (
+              <line key={`h${p}`} x1="0" y1={`${p}%`} x2="100%" y2={`${p}%`} />
+            ))}
+            {[10,20,30,40,50,60,70,80,90].map(p => (
+              <line key={`v${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="100%" />
+            ))}
+          </g>
+        </svg>
+        {/* Subtle bottom-left accent wash */}
         <div
-          className="absolute inset-0 opacity-[0.18] pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(oklch(0.60 0.26 280 / 0.9) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
-          aria-hidden="true"
-        />
-        {/* Electric glow orb */}
-        <div
-          className="absolute bottom-[-60px] left-[-60px] w-80 h-80 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, oklch(0.60 0.26 280 / 0.30) 0%, transparent 68%)' }}
-          aria-hidden="true"
-        />
-        {/* Secondary glow top-right */}
-        <div
-          className="absolute top-[-40px] right-[-40px] w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, oklch(0.64 0.19 150 / 0.15) 0%, transparent 70%)' }}
+          className="absolute bottom-0 left-0 w-64 h-64 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at bottom left, oklch(0.60 0.26 280 / 0.12) 0%, transparent 70%)' }}
           aria-hidden="true"
         />
         {/* Top: wordmark */}

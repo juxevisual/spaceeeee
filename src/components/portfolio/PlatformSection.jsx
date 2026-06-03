@@ -22,7 +22,7 @@ function getPlatformColor(platform) {
   return colorMap[platform]
 }
 
-export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddForPlatform, index = 0, forceOpen = false }) {
+export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddForPlatform, index = 0, forceOpen = false, hideValues = false }) {
   const [open, setOpen] = useState(false)
 
   // Auto-expand when a search makes this section relevant
@@ -64,7 +64,7 @@ export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddFor
 
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <span className="text-sm font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.02em]">
-                {formatCompact(total)}
+                {hideValues ? "••••" : formatCompact(total)}
               </span>
               <svg
                 width="14" height="14"
@@ -83,7 +83,7 @@ export function PlatformSection({ platform, holdings, onEdit, onDelete, onAddFor
               <div className="px-3 pb-3 space-y-2 border-t border-black/[0.04] dark:border-white/[0.04]">
                 <div className="pt-2 space-y-2.5">
                   {holdings.map(h => (
-                    <HoldingCard key={h.id} holding={h} onEdit={onEdit} onDelete={onDelete} />
+                    <HoldingCard key={h.id} holding={h} onEdit={onEdit} onDelete={onDelete} hideValues={hideValues} />
                   ))}
                 </div>
                 <button

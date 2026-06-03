@@ -1,7 +1,7 @@
-﻿import { useState } from 'react'
-import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS } from '../../lib/format'
+import { useState } from 'react'
+import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS, todayJakarta } from '../../lib/format'
 
-function FamilyEntryRow({ entry, onEdit, onDelete, authorName }) {
+function FamilyEntryRow({ entry, onEdit, onDelete, authorName, hideDate = false }) {
   const [confirming, setConfirming] = useState(false)
   const label = entry.category === 'lainnya' && entry.custom_label
     ? entry.custom_label
@@ -15,7 +15,9 @@ function FamilyEntryRow({ entry, onEdit, onDelete, authorName }) {
       </div>
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
+          {!hideDate && (
+            <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
+          )}
           <span className="text-xs font-medium text-surface-600 dark:text-surface-400">{label}</span>
           {entry.description && (
             <span className="text-xs text-surface-400 dark:text-surface-500 truncate">{entry.description}</span>
@@ -70,6 +72,18 @@ function FamilyEntryRow({ entry, onEdit, onDelete, authorName }) {
   )
 }
 
+function DayHeader({ dateStr, todayStr }) {
+  const label = dateStr === todayStr ? 'Today' : formatDate(dateStr)
+  return (
+    <div className="flex items-center gap-3 pt-4 pb-1 first:pt-0">
+      <span className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] flex-shrink-0">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-surface-100 dark:bg-surface-800" />
+    </div>
+  )
+}
+
 export function FamilyTimeline({ expenses, monthlyTotal, onEdit, onDelete, loading, userNames }) {
   if (loading) {
     return (
@@ -83,31 +97,52 @@ export function FamilyTimeline({ expenses, monthlyTotal, onEdit, onDelete, loadi
 
   if (expenses.length === 0) {
     return (
-      <div className="py-12 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-        <p className="text-sm font-medium text-surface-500 dark:text-surface-400">No family expenses this month</p>
-        <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Tap + Add to log a shared household expense</p>
+      <div className="py-14 flex flex-col items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-surface-400 dark:text-surface-500" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">No family expenses yet</p>
+          <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Shared household costs will appear here</p>
+        </div>
       </div>
     )
   }
 
+  // Group by date, newest first
+  const grouped = expenses.reduce((acc, e) => {
+    if (!acc[e.date]) acc[e.date] = []
+    acc[e.date].push(e)
+    return acc
+  }, {})
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
+  const todayStr = todayJakarta()
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-surface-100 dark:border-surface-800">
-        <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Family this month</p>
-        <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums">{formatIDR(monthlyTotal)}</p>
-      </div>
-      <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
-        {expenses.map(entry => (
-          <FamilyEntryRow
-            key={entry.id}
-            entry={entry}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            authorName={userNames[entry.user_id] || 'Unknown'}
-          />
+      <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-2">Family this month</p>
+      <div>
+        {sortedDates.map(date => (
+          <div key={date}>
+            <DayHeader dateStr={date} todayStr={todayStr} />
+            <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
+              {grouped[date].map(entry => (
+                <FamilyEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  authorName={userNames[entry.user_id] || 'Unknown'}
+                  hideDate
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
   )
 }
-

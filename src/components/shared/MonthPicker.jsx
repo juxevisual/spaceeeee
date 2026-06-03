@@ -7,6 +7,7 @@ export function MonthPicker({ month, year, onChange }) {
     if (month === 1) onChange(12, year - 1)
     else onChange(month - 1, year)
   }
+
   const next = () => {
     const { year: nowYear, month: nowMonth } = nowJakarta()
     if (year > nowYear || (year === nowYear && month >= nowMonth)) return
@@ -14,13 +15,18 @@ export function MonthPicker({ month, year, onChange }) {
     else onChange(month + 1, year)
   }
 
-  const isCurrentMonth = () => {
+  const goToNow = () => {
     const { year: nowYear, month: nowMonth } = nowJakarta()
-    return month === nowMonth && year === nowYear
+    onChange(nowMonth, nowYear)
   }
 
+  const isCurrent = (() => {
+    const { year: nowYear, month: nowMonth } = nowJakarta()
+    return month === nowMonth && year === nowYear
+  })()
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <button
         onClick={prev}
         className="group p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
@@ -30,12 +36,19 @@ export function MonthPicker({ month, year, onChange }) {
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
-      <span className="text-sm font-medium text-surface-700 dark:text-surface-300 min-w-[90px] text-center">
-        {MONTHS[month - 1]} {year}
-      </span>
+
+      <div className="relative flex flex-col items-center min-w-[90px]">
+        <span className={`text-sm font-medium text-center transition-colors ${isCurrent ? 'text-surface-900 dark:text-surface-100' : 'text-surface-600 dark:text-surface-400'}`}>
+          {MONTHS[month - 1]} {year}
+        </span>
+        {isCurrent && (
+          <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-primary-500" aria-hidden="true" />
+        )}
+      </div>
+
       <button
         onClick={next}
-        disabled={isCurrentMonth()}
+        disabled={isCurrent}
         className="group p-2.5 rounded-md text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="Next month"
       >
@@ -43,6 +56,15 @@ export function MonthPicker({ month, year, onChange }) {
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>
+
+      {!isCurrent && (
+        <button
+          onClick={goToNow}
+          className="text-[10px] font-semibold text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 px-1.5 py-0.5 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+        >
+          Now
+        </button>
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
-﻿import { useState } from 'react'
-import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS, getAllCategories } from '../../lib/format'
+import { useState } from 'react'
+import { formatIDR, formatDate, CATEGORY_LABELS, CATEGORY_COLORS, getAllCategories, todayJakarta } from '../../lib/format'
 
-function EntryRow({ entry, onEdit, onDelete, categoryLookup = {} }) {
+function EntryRow({ entry, onEdit, onDelete, categoryLookup = {}, hideDate = false }) {
   const [confirming, setConfirming] = useState(false)
   const catInfo = categoryLookup[entry.category] || {}
   const label = entry.category === 'lainnya' && entry.custom_label
@@ -20,7 +20,9 @@ function EntryRow({ entry, onEdit, onDelete, categoryLookup = {} }) {
       </div>
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
+          {!hideDate && (
+            <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
+          )}
           <span className="text-xs font-medium" style={{ color: dot }}>{label}</span>
           {entry.description && (
             <span className="text-xs text-surface-400 dark:text-surface-500 truncate">{entry.description}</span>
@@ -74,6 +76,18 @@ function EntryRow({ entry, onEdit, onDelete, categoryLookup = {} }) {
   )
 }
 
+function DayHeader({ dateStr, todayStr }) {
+  const label = dateStr === todayStr ? 'Today' : formatDate(dateStr)
+  return (
+    <div className="flex items-center gap-3 pt-4 pb-1 first:pt-0">
+      <span className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] flex-shrink-0">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-surface-100 dark:bg-surface-800" />
+    </div>
+  )
+}
+
 export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
   const entries = Object.entries(byCategory)
     .filter(([, v]) => v > 0)
@@ -100,7 +114,7 @@ export function CategorySummaryBar({ byCategory, total, categoryLookup = {} }) {
                 <span className="text-xs font-medium text-surface-700 dark:text-surface-300 tabular-nums flex-shrink-0 text-right">{formatIDR(amount)}</span>
               </div>
             </div>
-            <div className="h-1 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
               <div
                 className="h-full rounded-full transition-[width] duration-500"
                 style={{ width: `${pct}%`, background: dot }}
@@ -117,6 +131,7 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
   const categoryLookup = Object.fromEntries(
     getAllCategories(customCategories).map(c => [c.key, c])
   )
+
   if (loading) {
     return (
       <div className="space-y-3" aria-busy="true" aria-label="Loading expenses">
@@ -129,31 +144,51 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
 
   if (expenses.length === 0) {
     return (
-      <div className="py-12 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-        <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Nothing logged this month</p>
-        <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Tap + Add to record your first expense</p>
+      <div className="py-14 flex flex-col items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-surface-400 dark:text-surface-500" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16l3-2 2.5 2L12 18l2.5 2L17 18l3 2V4a2 2 0 0 0-2-2z" />
+            <line x1="9" y1="10" x2="15" y2="10" /><line x1="9" y1="14" x2="15" y2="14" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">Nothing logged yet</p>
+          <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Add an expense to start tracking this month</p>
+        </div>
       </div>
     )
   }
 
+  // Group by date, newest first
+  const grouped = expenses.reduce((acc, e) => {
+    if (!acc[e.date]) acc[e.date] = []
+    acc[e.date].push(e)
+    return acc
+  }, {})
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
+  const todayStr = todayJakarta()
+
   return (
     <div>
-      {/* Category summary bar */}
-      <div className="pb-5 mb-6 border-b border-surface-100 dark:border-surface-800">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">By category</p>
-          <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 tabular-nums">{formatIDR(monthlyTotal)}</p>
-        </div>
+      {/* Category summary */}
+      <div className="pb-5 mb-2 border-b border-surface-100 dark:border-surface-800">
+        <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-3">By category</p>
         <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} categoryLookup={categoryLookup} />
       </div>
 
-      {/* Timeline */}
-      <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
-        {expenses.map(entry => (
-          <EntryRow key={entry.id} entry={entry} onEdit={onEdit} onDelete={onDelete} categoryLookup={categoryLookup} />
+      {/* Day-grouped timeline */}
+      <div>
+        {sortedDates.map(date => (
+          <div key={date}>
+            <DayHeader dateStr={date} todayStr={todayStr} />
+            <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
+              {grouped[date].map(entry => (
+                <EntryRow key={entry.id} entry={entry} onEdit={onEdit} onDelete={onDelete} categoryLookup={categoryLookup} hideDate />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
   )
 }
-

@@ -55,7 +55,29 @@ function ExchangeRatesPanel({ holdings, exchangeRates, ratesUpdatedAt, onRefresh
   )
 }
 
+function EyeIcon({ closed }) {
+  return closed ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  ) : (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
 export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate }) {
+  const [hideValues, setHideValues] = useState(() => localStorage.getItem('portfolio_private_mode') === 'true')
+  const toggleHideValues = () => setHideValues(v => {
+    const next = !v
+    localStorage.setItem('portfolio_private_mode', next)
+    return next
+  })
+
   const [chartTab, setChartTab] = useState('performance')
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
@@ -201,13 +223,21 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                   />
                 )}
                 <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Net worth</p>
+                <button
+                  onClick={toggleHideValues}
+                  aria-label={hideValues ? 'Show values' : 'Hide values'}
+                  title={hideValues ? 'Show values' : 'Hide values'}
+                  className="ml-auto p-1 rounded-md text-surface-300 dark:text-surface-600 hover:text-surface-500 dark:hover:text-surface-400 transition-colors"
+                >
+                  <EyeIcon closed={hideValues} />
+                </button>
               </div>
 
               {loading ? (
                 <div className="animate-pulse h-10 w-36 bg-surface-200 dark:bg-surface-700 rounded-lg mb-3" />
               ) : (
                 <p className="text-[2.6rem] font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.03em] leading-none mb-4">
-                  {formatCompact(animatedNetWorth)}
+                  {hideValues ? "••••••" : formatCompact(animatedNetWorth)}
                 </p>
               )}
 
@@ -218,9 +248,13 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                       ? 'bg-gain-light dark:bg-gain/15 text-gain-dark dark:text-gain'
                       : 'bg-loss-light dark:bg-loss/15 text-loss-dark dark:text-loss'
                   }`}>
-                    {isGain ? '+' : 'âˆ’'}{formatCompact(animatedGainLoss)}
-                    <span className="opacity-40">·</span>
-                    {isGain ? '+' : 'âˆ’'}{Math.abs(gainLossPct).toFixed(2)}%
+                    {hideValues ? "••••" : (
+                      <>
+                        {isGain ? "+" : "−"}{formatCompact(animatedGainLoss)}
+                        <span className="opacity-40">·</span>
+                        {isGain ? "+" : "−"}{Math.abs(gainLossPct).toFixed(2)}%
+                      </>
+                    )}
                   </span>
                   {availablePlatforms.length > 0 && (
                     <p className="text-xs text-surface-400 dark:text-surface-500 mt-3">
@@ -308,12 +342,19 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
               ))}
             </div>
           ) : holdings.length === 0 ? (
-            <div className="py-16 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-              <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">No holdings yet</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Add your first holding to get started</p>
+            <div className="py-16 flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-surface-400 dark:text-surface-500" aria-hidden="true">
+                  <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-surface-500 dark:text-surface-400">No holdings yet</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">Add your first asset to start tracking your portfolio</p>
+              </div>
               <button
                 onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
-                className="mt-5 px-5 py-2 text-sm font-semibold rounded-full bg-primary-500 text-white hover:bg-primary-600 active:scale-[0.97] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                className="px-5 py-2 text-sm font-semibold rounded-full bg-primary-500 text-white hover:bg-primary-600 active:scale-[0.97] transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
               >
                 Add holding
               </button>
@@ -333,11 +374,18 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                 filteredCount={filteredSortedHoldings.length}
               />
               {sortedPlatforms.length === 0 ? (
-                <div className="py-10 text-center border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">No holdings match</p>
-                  <button onClick={clearFilters} className="mt-3 text-xs font-semibold text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                    Clear filters
-                  </button>
+                <div className="py-12 flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" className="text-surface-400 dark:text-surface-500" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Nothing matches</p>
+                    <button onClick={clearFilters} className="mt-1.5 text-xs font-semibold text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                      Clear filters
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -351,6 +399,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                       onDelete={onDelete}
                       onAddForPlatform={handleAddForPlatform}
                       forceOpen={forceExpand}
+                      hideValues={hideValues}
                     />
                   ))}
                 </div>

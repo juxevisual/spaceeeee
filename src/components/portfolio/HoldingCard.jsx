@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatIDR, formatCompact, formatPct, formatQuantity, formatRelativeTime, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS_MAP } from '../../lib/format'
 
-export function HoldingCard({ holding, onEdit, onDelete }) {
+export function HoldingCard({ holding, onEdit, onDelete, hideValues = false }) {
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
@@ -44,10 +44,11 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
                 )}
               </div>
               <p className="text-xs text-surface-400 dark:text-surface-500 mt-0.5 tabular-nums">
-                {holding.input_mode === 'value'
-                  ? `Total value · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatCompact(holding.current_price)}`
-                  : `${formatQuantity(holding.quantity, holding.asset_type)} · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatIDR(holding.current_price)}`
-                }
+                {hideValues ? "••••" : (
+                  holding.input_mode === 'value'
+                    ? `Total value · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatCompact(holding.current_price)}`
+                    : `${formatQuantity(holding.quantity, holding.asset_type)} · ${holding.currency === 'USD' ? `$${holding.current_price.toLocaleString()}` : formatIDR(holding.current_price)}`
+                )}
                 <span className="mx-1.5 text-surface-200 dark:text-surface-700">·</span>
                 <span className="text-[11px]">{formatRelativeTime(holding.last_updated)}</span>
               </p>
@@ -55,14 +56,14 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
 
             <div className="text-right flex-shrink-0 space-y-1">
               <p className="text-sm font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.02em]">
-                {formatCompact(holding.currentValue)}
+                {hideValues ? "••••" : formatCompact(holding.currentValue)}
               </p>
               <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums ${
                 isGain
                   ? 'bg-gain-light dark:bg-gain/15 text-gain-dark dark:text-gain'
                   : 'bg-loss-light dark:bg-loss/15 text-loss-dark dark:text-loss'
               }`}>
-                {isGain ? '+' : '-'}{formatPct(Math.abs(holding.gainLossPct)).replace(/[+-]/, '')}
+                {hideValues ? "••" : `${isGain ? '+' : '-'}${formatPct(Math.abs(holding.gainLossPct)).replace(/[+-]/, '')}`}
               </span>
             </div>
 
@@ -87,16 +88,17 @@ export function HoldingCard({ holding, onEdit, onDelete }) {
                     {holding.input_mode === 'value' ? 'Amount invested' : 'Avg buy price'}
                   </span>
                   <p className="font-semibold text-surface-700 dark:text-surface-300 tabular-nums mt-0.5">
-                    {holding.currency === 'USD'
-                      ? `$${holding.avg_buy_price.toLocaleString()}`
-                      : holding.input_mode === 'value' ? formatCompact(holding.avg_buy_price) : formatIDR(holding.avg_buy_price)
-                    }
+                    {hideValues ? "••••" : (
+                      holding.currency === 'USD'
+                        ? `$${holding.avg_buy_price.toLocaleString()}`
+                        : holding.input_mode === 'value' ? formatCompact(holding.avg_buy_price) : formatIDR(holding.avg_buy_price)
+                    )}
                   </p>
                 </div>
                 <div>
                   <span className="text-surface-400 dark:text-surface-500">Gain / Loss</span>
                   <p className={`font-semibold tabular-nums mt-0.5 ${isGain ? 'text-gain-dark dark:text-gain' : 'text-loss-dark dark:text-loss'}`}>
-                    {isGain ? '+' : ''}{formatCompact(holding.gainLoss)}
+                    {hideValues ? "••••" : `${isGain ? '+' : ''}${formatCompact(holding.gainLoss)}`}
                   </p>
                 </div>
                 {holding.notes && (

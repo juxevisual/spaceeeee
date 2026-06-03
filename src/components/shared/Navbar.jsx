@@ -28,7 +28,7 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
   }
 
   return (
-    <div className="popover-enter absolute right-0 top-full mt-2 w-52 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl shadow-xl z-50 p-3">
+    <div className="popover-enter fixed right-4 top-[7.5rem] md:absolute md:right-0 md:top-full md:mt-2 w-52 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl shadow-xl z-50 p-3">
       <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Display name</p>
       <input
         ref={ref}
@@ -82,12 +82,12 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
 
   // Mobile-only bottom tab classes
   const mobileTab = ({ isActive }) =>
-    `flex-1 py-2.5 text-xs font-semibold text-center transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+    `flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
       isActive ? 'text-primary-500 dark:text-primary-400' : 'text-surface-400 dark:text-surface-500'
     }`
 
   const mobileTogetherTab = ({ isActive }) =>
-    `flex-1 py-2.5 text-xs font-semibold text-center transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+    `flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${
       isActive ? 'text-gain dark:text-gain' : 'text-surface-400 dark:text-surface-500'
     }`
 
@@ -164,9 +164,24 @@ export function Navbar({ onSignOut, displayName: initialName, userId, onNameUpda
         className={`pointer-events-auto md:hidden w-full max-w-3xl flex rounded-full overflow-hidden ${pillBase}`}
         aria-label="Main navigation"
       >
-        <NavLink to="/portfolio" className={mobileTab}>Portfolio</NavLink>
-        <NavLink to="/expenses" className={mobileTab}>Expenses</NavLink>
-        <NavLink to="/combined" className={mobileTogetherTab}>Together</NavLink>
+        <NavLink to="/portfolio" className={mobileTab}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+          <span>Portfolio</span>
+        </NavLink>
+        <NavLink to="/expenses" className={mobileTab}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16l3-2 2.5 2L12 18l2.5 2L17 18l3 2V4a2 2 0 0 0-2-2z" /><line x1="9" y1="10" x2="15" y2="10" /><line x1="9" y1="14" x2="15" y2="14" />
+          </svg>
+          <span>Expenses</span>
+        </NavLink>
+        <NavLink to="/combined" className={mobileTogetherTab}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Together</span>
+        </NavLink>
       </nav>
     </div>
   )
