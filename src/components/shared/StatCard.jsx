@@ -1,4 +1,4 @@
-export function StatCard({ label, value, sub, trend, loading }) {
+export function StatCard({ label, value, sub, trend, loading, labelStyle }) {
   if (loading) {
     return (
       <div className="animate-pulse">
@@ -9,7 +9,7 @@ export function StatCard({ label, value, sub, trend, loading }) {
   }
   return (
     <div>
-      <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-1.5 leading-none">
+      <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-1.5 leading-none" style={labelStyle}>
         {label}
       </p>
       <p key={value} className="text-xl font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.01em] leading-tight stat-value-in">

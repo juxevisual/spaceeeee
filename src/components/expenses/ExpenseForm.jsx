@@ -59,7 +59,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
       custom_label: form.category === 'lainnya' ? form.custom_label : null,
       type: form.type || 'personal',
     }) || {}
-    if (!error) toast(initial ? 'Expense updated' : 'Expense added')
+    if (!error) toast(initial ? 'Expense updated' : 'Expense added', { color: 'oklch(0.60 0.26 280)' })
   }
 
   const inputClass = (field) =>
@@ -205,7 +205,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
                   await onAddCategory?.(cat)
                   set('category', cat.key)
                   setShowAddCategory(false)
-                  toast('Category added')
+                  toast('Category added', { color: 'oklch(0.60 0.26 280)' })
                 }}
                 onCancel={() => setShowAddCategory(false)}
               />

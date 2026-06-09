@@ -23,7 +23,7 @@ function NamePopover({ displayName, userId, onUpdated, onClose }) {
     })
     setSaving(false)
     onUpdated(val.trim())
-    toast('Name updated')
+    toast('Name updated', { color: 'oklch(0.60 0.26 280)' })
     onClose()
   }
 

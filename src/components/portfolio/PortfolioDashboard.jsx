@@ -23,7 +23,7 @@ function ExchangeRatesPanel({ holdings, exchangeRates, ratesUpdatedAt, onRefresh
   return (
     <div className="border-t border-surface-100 dark:border-surface-800/60 pt-3 mt-3">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Rates</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.60 0.16 280)' }}>Rates</p>
         <div className="flex items-center gap-2">
           {ratesUpdatedAt && (
             <span
@@ -234,7 +234,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                     aria-hidden="true"
                   />
                 )}
-                <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Net worth</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.60 0.16 280)' }}>Net worth</p>
                 <button
                   onClick={toggleHideValues}
                   aria-label={hideValues ? 'Show values' : 'Hide values'}
@@ -333,7 +333,7 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
         {/* â”€â”€ Right column: holdings â”€â”€ */}
         <div ref={holdingsRef}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em]">Holdings</h2>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.60 0.16 280)' }}>Holdings</h2>
             <button
               onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
               className="group flex items-center gap-2 pl-4 pr-2 py-2 text-xs font-semibold rounded-full bg-primary-500 text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary-600 hover:shadow-[0_4px_16px_rgba(107,79,255,0.35)] active:scale-[0.97]"

@@ -116,6 +116,7 @@ export function ExpenseDashboard({ user }) {
     const expToRestore = [...expenses, ...familyExpenses].find(e => e.id === id)
     await deleteExpenseRaw(id)
     toast('Expense deleted', {
+      color: 'oklch(0.60 0.26 280)',
       action: {
         label: 'Undo',
         onClick: () => {
@@ -161,7 +162,11 @@ export function ExpenseDashboard({ user }) {
             </button>
           )}
           {isCurrentMonth && streak >= 2 && (
-            <span className="text-[11px] text-surface-400 dark:text-surface-500 pl-1" aria-label={`${streak}-day logging streak`}>
+            <span
+              className="text-[11px] pl-1"
+              style={{ color: streak >= 7 ? 'oklch(0.72 0.18 75)' : streak >= 3 ? 'oklch(0.65 0.16 75)' : undefined }}
+              aria-label={`${streak}-day logging streak`}
+            >
               {streak}d streak
             </span>
           )}

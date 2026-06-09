@@ -10,6 +10,17 @@ export function SpendingPace({ currentTotal, lastMonthPartial, month, year, load
   const delta = hasComparison ? currentTotal - lastMonthPartial : null
   const deltaPct = hasComparison && delta !== null ? (delta / lastMonthPartial) * 100 : null
 
+  const prevMonth = month === 1 ? 12 : month - 1
+  const prevYear = month === 1 ? year - 1 : year
+  const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate()
+  const lastMonthProjected = hasComparison && nowDay > 0 ? Math.round((lastMonthPartial / nowDay) * daysInPrevMonth) : null
+  const projectionDeltaPct = lastMonthProjected && lastMonthProjected > 0 ? ((projected - lastMonthProjected) / lastMonthProjected) * 100 : null
+  const projectionColor = projectionDeltaPct !== null
+    ? projectionDeltaPct > 10 ? 'text-loss-dark dark:text-loss'
+    : projectionDeltaPct < -10 ? 'text-gain-dark dark:text-gain'
+    : 'text-surface-700 dark:text-surface-300'
+    : 'text-surface-700 dark:text-surface-300'
+
   // Nothing to show if no spending yet and not loading
   if (!loading && currentTotal <= 0) return null
 
@@ -53,7 +64,7 @@ export function SpendingPace({ currentTotal, lastMonthPartial, month, year, load
         <span className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.06em]">
           on pace for
         </span>
-        <span className="text-xs font-semibold text-surface-700 dark:text-surface-300 tabular-nums">
+        <span className={`text-xs font-semibold tabular-nums ${projectionColor}`}>
           {formatCompact(projected)}
         </span>
       </div>

@@ -118,7 +118,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
       }
     }
     const { error } = await onSubmit(payload) || {}
-    if (!error) toast(initial ? 'Holding updated' : 'Holding added')
+    if (!error) toast(initial ? 'Holding updated' : 'Holding added', { color: 'oklch(0.60 0.26 280)' })
   }
 
   const inputClass = (field) =>
@@ -277,7 +277,7 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
                   await onAddAssetType?.(type)
                   set('asset_type', type.key)
                   setShowAddType(false)
-                  toast('Asset type added')
+                  toast('Asset type added', { color: 'oklch(0.60 0.26 280)' })
                 }}
                 onCancel={() => setShowAddType(false)}
               />

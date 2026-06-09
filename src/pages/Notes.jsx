@@ -532,6 +532,7 @@ export function Notes({ user }) {
     const noteToRestore = notes.find(n => n.id === id)
     await deleteNoteRaw(id)
     toast('Note deleted', {
+      color: 'oklch(0.58 0.18 75)',
       action: {
         label: 'Undo',
         onClick: () => {
@@ -623,7 +624,7 @@ export function Notes({ user }) {
           {unpinned.length > 0 && (
             <div className="space-y-3">
               {pinned.length > 0 && (
-                <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em]">Recent</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'oklch(0.62 0.14 75)' }}>Recent</p>
               )}
               <div className="grid sm:grid-cols-2 gap-3">
                 {unpinned.map((n, i) => (

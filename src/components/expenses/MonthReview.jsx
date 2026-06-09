@@ -102,7 +102,7 @@ export function MonthReview({ expenses, familyExpenses, monthlyTotal, familyTota
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-1 pb-4 flex-shrink-0 border-b border-surface-100 dark:border-surface-800">
           <div>
-            <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] mb-0.5">Month review</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-0.5" style={{ color: 'oklch(0.60 0.16 280)' }}>Month review</p>
             <h2 className="text-base font-bold text-surface-900 dark:text-surface-100 tracking-tight">
               {MONTH_NAMES[month - 1]} {year}
             </h2>
@@ -123,7 +123,7 @@ export function MonthReview({ expenses, familyExpenses, monthlyTotal, familyTota
 
           {/* Hero: total + delta */}
           <div>
-            <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] mb-2">Total spent</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-2" style={{ color: 'oklch(0.60 0.16 280)' }}>Total spent</p>
             <p className="text-[2.6rem] font-bold text-surface-900 dark:text-surface-100 tracking-[-0.03em] leading-none tabular-nums">
               {formatCompact(totalCombined)}
             </p>
@@ -147,7 +147,7 @@ export function MonthReview({ expenses, familyExpenses, monthlyTotal, familyTota
           {/* Top categories */}
           {topCategories.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] mb-3">Top categories</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-3" style={{ color: 'oklch(0.60 0.16 280)' }}>Top categories</p>
               <div className="space-y-3.5">
                 {topCategories.map(([cat, amount]) => {
                   const pct = totalCombined > 0 ? (amount / totalCombined) * 100 : 0
@@ -179,7 +179,7 @@ export function MonthReview({ expenses, familyExpenses, monthlyTotal, familyTota
           {/* Highlights */}
           {(biggestDay || biggestExpense || hasSplit) && (
             <div>
-              <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] mb-1">Highlights</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: 'oklch(0.60 0.16 280)' }}>Highlights</p>
               <div className="divide-y divide-surface-100 dark:divide-surface-800">
                 {biggestDay && (
                   <div className="flex items-center justify-between py-3">

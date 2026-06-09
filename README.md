@@ -1,6 +1,6 @@
 # spaceeeee
 
-A private personal finance web app for two users — track investment portfolios and monthly expenses together. Built with React, Webpack, Tailwind CSS, and Supabase.
+A private daily-use web app for two partners — track investment portfolios, monthly expenses, shared notes, and important dates. Built with React, Webpack, Tailwind CSS, and Supabase.
 
 ## Features
 
@@ -31,9 +31,29 @@ A private personal finance web app for two users — track investment portfolios
 - Category breakdown chart (combined total)
 - 6-month trend line chart (you + partner as separate lines)
 
+**Notes board**
+- Shared bulletin board — both users read all notes, each user owns their own
+- 6 color options (default, yellow, green, indigo, rose, sky) with live preview
+- Text notes and checklist notes (checkable items, Enter/Backspace keyboard navigation)
+- Reactions: check, heart, flag — read-only on your own notes, interactive on partner's
+- Pin notes to the top, archive to keep the board clean
+- Undo delete — 5-second window to restore a deleted note
+
+**Important dates**
+- Shared date tracker — anniversaries, document expiries, bills, subscriptions, and more
+- 9 built-in categories with distinct colors
+- Coming-up strip: dates within the next 60 days, sorted by proximity
+- Year calendar view: 12-month grid with colored dots and hover tooltips
+- Recurring annual dates: always shows next occurrence
+- Days-since display for past recurring dates (shown in years when applicable)
+- Past one-time dates shown in a separate section below the upcoming list
+- Undo delete — 5-second window to restore
+
 **General**
 - Floating glass-pill navbar, dark/light mode toggle (localStorage)
-- Scroll-reveal entry animations, spring physics transitions
+- Mobile "More" tab for Notes and Dates; tab label shows the active sub-page name
+- Undo toast on all delete operations across every module
+- Scroll-reveal entry animations, staggered card entrances, spring physics transitions
 - Fully responsive — single-column on mobile, 2-column on desktop for Portfolio
 - Accessible: focus trap in dialogs, ARIA labels, screen-reader summaries on charts
 
@@ -147,6 +167,42 @@ create policy "snapshots_own" on portfolio_snapshots for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 create index portfolio_snapshots_user_date
   on portfolio_snapshots(user_id, recorded_at desc);
+
+-- notes
+create table notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  color text not null default 'default',
+  type text not null default 'text',
+  pinned boolean not null default false,
+  archived boolean not null default false,
+  reactions jsonb not null default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table notes enable row level security;
+create policy "notes_select" on notes for select using (auth.uid() is not null);
+create policy "notes_insert" on notes for insert with check (user_id = auth.uid());
+create policy "notes_update" on notes for update using (auth.uid() is not null);
+create policy "notes_delete" on notes for delete using (user_id = auth.uid());
+
+-- important_dates
+create table important_dates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  label text not null,
+  date date not null,
+  recurring boolean not null default false,
+  category text not null default 'personal',
+  description text,
+  created_at timestamptz default now()
+);
+alter table important_dates enable row level security;
+create policy "dates_select" on important_dates for select using (auth.uid() is not null);
+create policy "dates_insert" on important_dates for insert with check (user_id = auth.uid());
+create policy "dates_update" on important_dates for update using (user_id = auth.uid());
+create policy "dates_delete" on important_dates for delete using (user_id = auth.uid());
 ```
 
 ### 4. Create user accounts

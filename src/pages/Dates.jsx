@@ -277,14 +277,14 @@ function UpcomingStrip({ dates }) {
 
   if (upcoming.length === 0) return (
     <div className="space-y-2">
-      <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em]">Coming up</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'oklch(0.58 0.14 220)' }}>Coming up</p>
       <p className="text-xs text-surface-300 dark:text-surface-600">Nothing in the next 60 days</p>
     </div>
   )
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em]">Coming up</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'oklch(0.58 0.14 220)' }}>Coming up</p>
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
         {upcoming.map(d => {
           const cat = DATE_CATEGORIES[d.category] || DATE_CATEGORIES.personal
@@ -391,6 +391,7 @@ export function Dates({ user }) {
     const dateToRestore = dates.find(d => d.id === id)
     await deleteDateRaw(id)
     toast('Date removed', {
+      color: 'oklch(0.54 0.18 220)',
       action: {
         label: 'Undo',
         onClick: () => {
@@ -471,7 +472,7 @@ export function Dates({ user }) {
             <div className="space-y-8">
               <UpcomingStrip dates={dates} />
               <div className="mt-2">
-                <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.08em] mb-1">All dates</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: 'oklch(0.58 0.14 220)' }}>All dates</p>
                 <div className="divide-y divide-surface-50 dark:divide-surface-800/60">
                   {upcomingDates.map((d, i) => (
                     <div key={d.id} className="date-row-enter" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>

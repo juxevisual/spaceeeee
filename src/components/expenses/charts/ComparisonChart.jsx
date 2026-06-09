@@ -39,11 +39,11 @@ export function ComparisonChart({ allExpenses, userId, partnerId, user1Name, use
   return (
     <div>
       <span className="sr-only">{srSummary}</span>
-      <div className="h-56" aria-hidden="true">
+      <div style={{ height: Math.max(180, data.length * 40 + 32) }} aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ top: 0, right: 16, bottom: 0, left: 0 }}>
             <XAxis type="number" tickFormatter={v => formatCompact(v)} tick={{ fontSize: 10, fill: tick }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="category" tickFormatter={v => CATEGORY_LABELS[v]?.split(' ')[0] || v} tick={{ fontSize: 10, fill: tick }} axisLine={false} tickLine={false} width={64} />
+            <YAxis type="category" dataKey="category" tickFormatter={v => CATEGORY_LABELS[v]?.split(' ')[0] || v} tick={{ fontSize: 10, fill: tick }} axisLine={false} tickLine={false} width={80} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: cursor }} />
             <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
             <Bar dataKey={user1Name} fill="oklch(0.60 0.26 280)" radius={[0, 3, 3, 0]} maxBarSize={16} />

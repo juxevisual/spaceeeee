@@ -2,7 +2,7 @@
 
 ## Product Purpose
 
-A private personal finance web app for two users (you + partner) to track investment portfolios and monthly expenses. Each user has their own private data. A shared Together view merges both users' expense data for household visibility.
+A private daily-use web app for two users (you + partner). Core features: investment portfolio tracking, monthly expense tracking, shared notes board, and shared important dates. Each user has their own private financial data. Several views are intentionally shared between both users: the Together expense view, the Notes board, and the Dates list.
 
 ## Users
 
@@ -37,9 +37,11 @@ product
 
 ## Modules
 
-1. **Portfolio Tracker** (`/portfolio`) — holdings grouped by platform, search/sort/filter controls, performance chart, allocation donut, multi-currency support with auto exchange rates
-2. **Expense Tracker** (`/expenses`) — personal and family expense tabs, timeline with category colors, category summary bars, month navigation, spending pace (current month: vs-last-month delta + projected total), month review sheet (past months: summary, top categories, highlights)
+1. **Portfolio Tracker** (`/portfolio`) — holdings grouped by platform, search/sort/filter controls, performance chart, allocation donut, multi-currency support with auto exchange rates, close-position workflow (proceeds move to cash)
+2. **Expense Tracker** (`/expenses`) — personal and family expense tabs, timeline with category colors, category velocity arrows, frequency counts, spending pace, month review sheet
 3. **Together View** (`/combined`) — both users' personal + family expenses merged, partner picker, comparison charts, 6-month trend
+4. **Notes** (`/notes`) — shared bulletin board; colored sticky notes (6 colors), checklist notes with checkboxes, reactions (check/heart/flag), pinned section, archive, undo delete
+5. **Important Dates** (`/dates`) — shared date tracker; 9 categories, coming-up strip (60-day window), year calendar with dot tooltips, recurring annual support, past dates section, undo delete
 
 ## Asset Types (built-in, English labels)
 
@@ -100,3 +102,6 @@ Light mode default. Dark mode toggle persisted to `localStorage`.
 - **Holdings:** Card-based grouped by platform. No data tables. Expand/collapse per card. Type badge uses asset type color as 10% background tint.
 - **Expenses:** Timeline (chronological, newest first). Category label text takes the category color for instant scanability.
 - **Together:** Green (gain color) as page identity accent — dividers, Together nav link active state, dual-avatar strip.
+- **Section identity colors:** Each section has one identity color applied consistently to its Add button, page label, and nav active state: Portfolio/Expenses = electric indigo, Together = signal green, Notes = warm amber (`oklch(0.58 0.18 75)`), Dates = calm sky (`oklch(0.54 0.18 220)`).
+- **Navbar overflow:** Desktop shows all 5 nav items inline. Mobile shows Portfolio, Expenses, Together, then a "More" tab that opens a popover for Notes and Dates. The More tab label changes to the active sub-page name.
+- **Toast with undo:** Delete operations across all modules show a 5-second "Undo" toast. Clicking Undo re-inserts the deleted item.

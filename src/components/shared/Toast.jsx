@@ -8,11 +8,11 @@ export function ToastProvider({ children }) {
   const show = useCallback((message, options = {}) => {
     // Backward compat: show(msg, 'error') still works
     const opts = typeof options === 'string' ? { type: options } : options
-    const { type = 'success', action } = opts
+    const { type = 'success', action, color } = opts
 
     const duration = action ? 5000 : 2350
     const id = Date.now()
-    setToasts(t => [...t, { id, message, type, action, exiting: false }])
+    setToasts(t => [...t, { id, message, type, action, color, exiting: false }])
     setTimeout(() => setToasts(t => t.map(x => x.id === id ? { ...x, exiting: true } : x)), duration)
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), duration + 200)
   }, [])
@@ -32,6 +32,9 @@ export function ToastProvider({ children }) {
                 : 'bg-surface-900 dark:bg-surface-100 text-surface-50 dark:text-surface-900'
             }`}
           >
+            {t.color && t.type !== 'error' && (
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} aria-hidden="true" />
+            )}
             <span>{t.message}</span>
             {t.action && (
               <button

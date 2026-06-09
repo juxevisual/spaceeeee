@@ -86,8 +86,10 @@ src/
       TypeCreator.jsx            (inline custom type/category creator)
   pages/
     Combined.jsx
+    Dates.jsx
     Expenses.jsx
     Login.jsx
+    Notes.jsx
     Portfolio.jsx
   lib/
     currencies.js                (ISO 4217 list, 36 currencies)
@@ -100,7 +102,11 @@ src/
     useChartColors.js            (dark-mode aware chart tick colors)
     useCountUp.js                (animated number counter)
     useExpenses.js
+    useCategoryFrequency.js      (last-6-months per-category entry counts for frequency display)
     useCategoryVelocity.js       (last-month per-category spend for velocity arrows)
+    useExpenseStreak.js          (consecutive days with at least one personal expense)
+    useImportantDates.js
+    useNotes.js
     usePace.js                   (last-month partial spend for SpendingPace)
     usePortfolio.js
     useScrollReveal.js           (IntersectionObserver reveal)
@@ -229,6 +235,59 @@ create index portfolio_snapshots_user_date
 ```
 
 A snapshot is inserted whenever: (a) a holding is added, edited, or deleted; (b) an exchange rate is changed; (c) first load and no snapshots exist yet (backfill). Powers the Performance chart.
+
+### `notes`
+
+```sql
+create table notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  color text not null default 'default',
+  type text not null default 'text',
+  pinned boolean not null default false,
+  archived boolean not null default false,
+  reactions jsonb not null default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table notes enable row level security;
+create policy "notes_select" on notes for select using (auth.uid() is not null);
+create policy "notes_insert" on notes for insert with check (user_id = auth.uid());
+create policy "notes_update" on notes for update using (auth.uid() is not null);
+create policy "notes_delete" on notes for delete using (user_id = auth.uid());
+```
+
+Notes:
+- `color`: one of `default | yellow | green | indigo | rose | sky`. Stored as key, resolved to OKLCH values in the frontend.
+- `type`: `text` or `checklist`. For checklists, `content` is a JSON string: `[{ "id": number, "text": string, "checked": boolean }]`.
+- `reactions`: JSON object `{ [userId]: "check" | "heart" | "flag" }`. One reaction per user per note. Any authenticated user can update `reactions` (RLS allows all authenticated users to update any note).
+- `updated_at`: set on every update (content, color, pin, archive, reactions).
+
+### `important_dates`
+
+```sql
+create table important_dates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  label text not null,
+  date date not null,
+  recurring boolean not null default false,
+  category text not null default 'personal',
+  description text,
+  created_at timestamptz default now()
+);
+alter table important_dates enable row level security;
+create policy "dates_select" on important_dates for select using (auth.uid() is not null);
+create policy "dates_insert" on important_dates for insert with check (user_id = auth.uid());
+create policy "dates_update" on important_dates for update using (user_id = auth.uid());
+create policy "dates_delete" on important_dates for delete using (user_id = auth.uid());
+```
+
+Notes:
+- `category`: one of `anniversary | personal | document | bill | health | travel | subscription | work | others`. No CHECK constraint — new categories can be added without schema change.
+- `recurring`: if true, the next occurrence is always computed relative to today (advances to next year once the date passes). Recurring dates never appear in the "Past" section.
+- `description`: optional free text shown below the label in the list row.
 
 ---
 
@@ -425,6 +484,108 @@ All chart axes use `useChartColors()` hook which switches tick/cursor colors bas
 
 ---
 
+## Module 4: Notes (`/notes`)
+
+### Header
+
+"Notes" label (amber identity color) + note count + amber "Add" button on right.
+
+### Add flow
+
+Add button opens a centered sheet (mobile: slides up from bottom, desktop: centered). Sheet contains:
+- **TypeToggle**: Text / Checklist pill selector (amber active state)
+- **Text mode**: Textarea with autoFocus, max 500 chars, Cmd+Enter submits
+- **Checklist mode**: Dynamic list of text inputs; Enter adds item, Backspace on empty removes item, autoFocus on first item
+- **Color picker**: 6 color dot swatches with drop-shadow glow on hover (default, yellow, green, indigo, rose, sky)
+- **Add button**: amber, closes sheet on success
+
+### Note card
+
+Board-first layout: 2-column grid on sm+, single column on mobile. Newest first, pinned at top.
+
+Each card:
+- Colored background (OKLCH values, dark-mode aware via `useIsDark` hook)
+- Content text (plain) or checkbox list (checkable by any user)
+- **Reaction bar**: check / heart / flag icons. Read-only on own notes (dimmed, not interactive). Interactive on partner's notes. Count shown when > 0.
+- **Checklist progress**: "N/N done" counter in amber; shows "All done!" with amber flash when last item is checked (clears immediately if any item is unchecked).
+- **Author initial bubble**: indigo for own notes, gain-green for partner's
+- **Actions** (own notes only): pin (amber when pinned), edit (opens inline editor), archive, delete
+
+### Edit mode
+
+Clicking Edit on own note replaces content with a textarea (or checklist editor), keeping the color picker active. Cmd+Enter or Save button commits. Escape cancels.
+
+### Archive
+
+Archive button moves note out of the main board. "N archived" toggle at bottom shows archived notes in a dimmed collapsed section. Archive is reversible (unarchive from same button).
+
+### Undo delete
+
+Deleting a note shows a 5-second "Note deleted · Undo" toast. Undo calls `addNote` with the original content/color/type (new id, lost pin/archive state).
+
+### Animations
+
+- Note cards: `note-card-enter` stagger (55ms between items, capped at 5)
+- Checkmark: `check-mark-enter` scale-in (150ms) on tick
+- Reaction buttons: `active:scale-[0.82]` tap feedback
+
+---
+
+## Module 5: Important Dates (`/dates`)
+
+### Header
+
+"Important dates" label (sky identity color) + List/Year view toggle + sky "Add" button.
+
+### Coming-up strip
+
+Horizontal scroll strip showing all dates within the next 60 days, sorted by proximity. Each card shows:
+- Category color dot + label
+- Big countdown number (sky color) + unit
+- Date label
+
+When no dates fall within 60 days: "Nothing in the next 60 days" fallback.
+
+Special treatment for `days === 0`: card gets `dates-card-today` CSS class (sky tinted background + sky ring).
+
+### List view
+
+Two sections with a divider between them:
+1. **Upcoming** — dates with `daysUntilNext >= 0`, sorted ascending
+2. **Past** — non-recurring dates with `daysUntilNext < 0`, sorted newest-first
+
+Each row: category dot, label, optional "annual" badge, date formatted, optional description, days-away chip, edit/delete (own dates only).
+
+**Days-away chip**:
+- Today → "Today" in sky
+- Tomorrow → "Tomorrow"
+- Future → "Xd away"
+- Past → "Xd ago"
+
+**Days since** (recurring dates, shown when `days > 0`): shows "X yrs since last" when >= 365 days, otherwise "Xd since last".
+
+### Year calendar view
+
+12-month grid (2 cols mobile, 3 cols sm, 4 cols lg). Each month shows a 7-column day grid. Day cells with events get colored dots (one dot per event, up to 2 shown). Today's cell filled with sky. Hovering a cell with events shows a tooltip (dark pill above the number) with event names.
+
+Recurring dates always plot on their month/day in the current calendar year.
+
+### Add/Edit form
+
+Sheet (bottom on mobile, centered on desktop). Fields: label, date input, 9 category pills, optional description textarea, recurring toggle (active state: `bg-surface-800` dark / `bg-primary-50` light with sky border). Submit sky button.
+
+### Undo delete
+
+Deleting shows a 5-second "Date removed · Undo" toast. Undo calls `addDate` with all original fields.
+
+### Animations
+
+- Date rows: `date-row-enter` stagger (40ms, capped at 8)
+- View toggle (List ↔ Year): `tab-fade-in` cross-fade (150ms)
+- DateForm: `dialog-backdrop-enter` + `dialog-panel-enter` on open
+
+---
+
 ## Custom Hooks
 
 ### `useAuth.js`
@@ -489,6 +650,56 @@ All chart axes use `useChartColors()` hook which switches tick/cursor colors bas
 // Fetches sum of expenses from the previous month up to the same day as today
 // (day-clamped to handle short months, e.g. March 31 → Feb 28).
 // Used by SpendingPace to compute the "vs last month" delta.
+```
+
+### `useExpenseStreak.js`
+```js
+// useExpenseStreak(user)
+// → { streak }
+//
+// Counts consecutive days (ending today or yesterday) with at least one
+// personal expense logged. Starts from yesterday if today has no entries
+// (streak is alive until a full calendar day passes with nothing).
+// Fetches last 400 days of dates; computed client-side.
+```
+
+### `useCategoryFrequency.js`
+```js
+// useCategoryFrequency(user, month, year)
+// → { avgFrequencyByCategory }
+//   avgFrequencyByCategory: { [category]: avgEntriesPerMonth }
+//
+// Fetches 6 previous months of personal expense dates/categories.
+// Averages entry count per category across months where the category appeared
+// (excludes months with zero entries to avoid dragging down occasional categories).
+// Used by CategorySummaryBar to render "N× avg M" frequency text.
+```
+
+### `useNotes.js`
+```js
+// useNotes(user)
+// → {
+//   notes,          // all notes sorted pinned-first, then newest-first
+//   loading,
+//   addNote,        // { content, color, type }
+//   updateNote,     // (id, updates) → saves content/color/pinned/archived/reactions
+//   deleteNote,     // (id)
+//   togglePin,      // (id, currentPinned)
+//   archiveNote,    // (id, currentArchived) — also sets pinned=false
+//   toggleReaction, // (noteId, currentReactions, userId, reactionKey)
+// }
+```
+
+### `useImportantDates.js`
+```js
+// useImportantDates(user)
+// → {
+//   dates,      // all dates sorted by date ascending
+//   loading,
+//   addDate,    // { label, date, recurring, category, description }
+//   updateDate, // (id, updates)
+//   deleteDate, // (id)
+// }
 ```
 
 ---

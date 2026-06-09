@@ -10,24 +10,22 @@ function EntryRow({ entry, onEdit, onDelete, categoryLookup = {}, hideDate = fal
   const dot = catInfo.color || CATEGORY_COLORS[entry.category] || 'oklch(0.55 0.08 60)'
 
   return (
-    <div className="flex items-start gap-3 py-3 group">
-      <div className="flex-shrink-0 mt-0.5">
-        <span
-          className="block w-2.5 h-2.5 rounded-full mt-1"
-          style={{ background: dot }}
-          aria-hidden="true"
-        />
-      </div>
+    <div className="flex items-center gap-3 py-3 group">
+      <span
+        className="block w-2.5 h-2.5 rounded-full flex-shrink-0"
+        style={{ background: dot }}
+        aria-hidden="true"
+      />
       <div className="flex-1 min-w-0 overflow-hidden">
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-baseline gap-2">
           {!hideDate && (
             <span className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums">{formatDate(entry.date)}</span>
           )}
           <span className="text-xs font-medium" style={{ color: dot }}>{label}</span>
-          {entry.description && (
-            <span className="text-xs text-surface-400 dark:text-surface-500 truncate">{entry.description}</span>
-          )}
         </div>
+        {entry.description && (
+          <span className="text-[11px] text-surface-400 dark:text-surface-500 block truncate mt-0.5">{entry.description}</span>
+        )}
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
         <span className="text-sm font-semibold text-surface-800 dark:text-surface-200 tabular-nums">
@@ -196,7 +194,7 @@ export function ExpenseTimeline({ expenses, byCategory, monthlyTotal, onEdit, on
     <div>
       {/* Category summary */}
       <div className="pb-5 mb-2 border-b border-surface-100 dark:border-surface-800">
-        <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-3">By category</p>
+        <p className="text-xs font-medium uppercase tracking-[0.07em] mb-3" style={{ color: 'oklch(0.60 0.16 280)' }}>By category</p>
         <CategorySummaryBar byCategory={byCategory} total={monthlyTotal} categoryLookup={categoryLookup} velocityByCategory={velocityByCategory} currentFrequency={currentFrequency} avgFrequencyByCategory={avgFrequencyByCategory} />
       </div>
 

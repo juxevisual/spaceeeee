@@ -112,7 +112,7 @@ function ChartSection({ title, children, featured = false }) {
       className={`border-b last:border-0 last:pb-0 ${featured ? 'pb-8' : 'pb-6'}`}
       style={{ borderBottomColor: 'oklch(0.64 0.19 150 / 0.15)' }}
     >
-      <h2 className="text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-[0.07em] mb-4">{title}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.07em] mb-4" style={{ color: 'oklch(0.58 0.14 150)' }}>{title}</h2>
       {children}
     </div>
   )
@@ -202,11 +202,13 @@ export function CombinedSummary({ user }) {
             label: myName,
             value: loading ? '—' : formatCompact(myTotal),
             sub: combinedTotal > 0 ? `${((myTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
+            labelStyle: { color: 'oklch(0.60 0.16 280)' },
           },
           {
             label: partnerName,
             value: loading ? '—' : formatCompact(partnerTotal),
             sub: combinedTotal > 0 ? `${((partnerTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
+            labelStyle: { color: 'oklch(0.58 0.14 150)' },
           },
           {
             label: 'Family',

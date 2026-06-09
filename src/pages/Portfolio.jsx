@@ -8,13 +8,13 @@ export function Portfolio({ user }) {
 
   const handleDelete = async (id) => {
     const result = await portfolio.deleteHolding(id)
-    if (!result?.error) toast('Holding removed')
+    if (!result?.error) toast('Holding removed', { color: 'oklch(0.60 0.26 280)' })
     return result
   }
 
   const handleClose = async (id, proceeds) => {
     const result = await portfolio.closeHolding(id, proceeds)
-    if (!result?.error) toast('Position closed, proceeds moved to cash')
+    if (!result?.error) toast('Position closed, proceeds moved to cash', { color: 'oklch(0.60 0.26 280)' })
     return result
   }
 
