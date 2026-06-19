@@ -131,6 +131,7 @@ export function ExpenseForm({ initial, onSubmit, onClose, loading, initialType =
             placeholder="0"
             value={form.amount}
             onChange={e => set('amount', e.target.value)}
+            autoFocus={!initial}
           />
           {errors.amount && <p className="text-xs text-loss mt-1" role="alert">{errors.amount}</p>}
         </div>

@@ -148,7 +148,7 @@ export function ExpenseDashboard({ user }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-3xl mx-auto px-4 pt-6 pb-24 md:pb-6">
       {/* Header — stacks on mobile, single row on sm+ */}
       <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div className="flex items-center gap-1">
@@ -274,6 +274,26 @@ export function ExpenseDashboard({ user }) {
           customCategories={customCategories}
         />
       )}
+
+      {/* Mobile FAB — visible on small screens only, mirrors the header Add button */}
+      <button
+        onClick={() => { setEditTarget(null); setFormOpen(true) }}
+        aria-label={`Add ${isFamily ? 'family' : 'personal'} expense`}
+        style={{
+          backgroundColor: isFamily ? 'oklch(0.64 0.19 150)' : 'oklch(0.60 0.26 280)',
+          boxShadow: isFamily
+            ? '0 4px 20px rgba(50,168,82,0.38)'
+            : '0 4px 20px rgba(107,79,255,0.38)',
+        }}
+        className="fab-enter md:hidden fixed bottom-6 right-4 z-30 group flex items-center gap-2 pl-4 pr-2 py-2.5 text-xs font-semibold rounded-full text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
+      >
+        Add
+        <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 group-hover:-translate-y-px transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </span>
+      </button>
 
       {formOpen && (
         <ExpenseForm

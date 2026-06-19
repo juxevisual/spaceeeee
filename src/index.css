@@ -184,6 +184,17 @@
   }
 }
 
+@keyframes fab-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.90); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fab-enter {
+  animation: fab-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab-enter { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+
 /* Today card identity tint in the dates coming-up strip */
 .dates-card-today {
   background-color: oklch(0.93 0.06 220);

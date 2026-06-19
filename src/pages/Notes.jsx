@@ -574,7 +574,7 @@ export function Notes({ user }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-3xl mx-auto px-4 pt-6 pb-24 md:pb-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.62 0.16 75)' }}>Notes</h2>
         <div className="flex items-center gap-3">
@@ -660,6 +660,24 @@ export function Notes({ user }) {
           )}
         </div>
       )}
+
+      {/* Mobile FAB — visible on small screens only, mirrors the header Add button */}
+      <button
+        onClick={() => setFormOpen(true)}
+        aria-label="Add note"
+        style={{
+          backgroundColor: 'oklch(0.58 0.18 75)',
+          boxShadow: '0 4px 20px rgba(180,120,30,0.35)',
+        }}
+        className="fab-enter md:hidden fixed bottom-6 right-4 z-30 group flex items-center gap-2 pl-4 pr-2 py-2.5 text-xs font-semibold rounded-full text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]"
+      >
+        Add
+        <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 group-hover:-translate-y-px transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </span>
+      </button>
 
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New note">
