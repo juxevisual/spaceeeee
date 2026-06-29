@@ -1,11 +1,40 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchLiveRates, fetchSingleRate, isRatesStale } from '../lib/exchangeRates'
+import { fetchCryptoPrices, isCryptoPricesStale } from '../lib/cryptoPrices'
 import { getAllAssetTypes } from '../lib/format'
 
-function toIDR(holding, exchangeRates) {
+const CRYPTO_CACHE_KEY = 'crypto_prices_cache'
+
+function loadCryptoCache() {
+  try {
+    const raw = localStorage.getItem(CRYPTO_CACHE_KEY)
+    if (!raw) return { prices: {}, updatedAt: null }
+    return JSON.parse(raw)
+  } catch { return { prices: {}, updatedAt: null } }
+}
+
+function saveCryptoCache(prices, updatedAt) {
+  try { localStorage.setItem(CRYPTO_CACHE_KEY, JSON.stringify({ prices, updatedAt })) } catch {}
+}
+
+function toIDR(holding, exchangeRates, cryptoPrices = {}) {
+  let unitPrice = holding.current_price
+
+  if (holding.asset_type === 'crypto' && holding.input_mode === 'units') {
+    const sym = holding.asset_name.toUpperCase().trim().replace(/^\$/, '')
+    const liveUsd = cryptoPrices[sym]
+    if (liveUsd !== undefined) {
+      if (holding.currency === 'USD') {
+        unitPrice = liveUsd
+      } else if (holding.currency === 'IDR') {
+        unitPrice = liveUsd * (exchangeRates?.USD || 16000)
+      }
+    }
+  }
+
   const rate = holding.currency === 'IDR' ? 1 : (exchangeRates?.[holding.currency] || 0)
-  const currentValue = holding.quantity * holding.current_price * rate
+  const currentValue = holding.quantity * unitPrice * rate
   const costBasis = holding.quantity * holding.avg_buy_price * rate
   const gainLoss = currentValue - costBasis
   const gainLossPct = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0
@@ -30,6 +59,10 @@ export function usePortfolio(user) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refreshingRates, setRefreshingRates] = useState(false)
+
+  const [cryptoPrices, setCryptoPrices] = useState(() => loadCryptoCache().prices)
+  const [cryptoPricesUpdatedAt, setCryptoPricesUpdatedAt] = useState(() => loadCryptoCache().updatedAt)
+  const [refreshingCryptoPrices, setRefreshingCryptoPrices] = useState(false)
 
   const fetchData = useCallback(async (shouldRecord = false) => {
     if (!user) return
@@ -69,6 +102,12 @@ export function usePortfolio(user) {
         setSettings(defaultSettings)
       }
 
+      // Auto-fetch crypto prices if stale (always, regardless of settings)
+      const { updatedAt: cryptoCacheTime } = loadCryptoCache()
+      if (isCryptoPricesStale(cryptoCacheTime)) {
+        fetchCryptoPricesBackground(holdingsData)
+      }
+
       const rates = settingsData?.exchange_rates || { USD: 16000 }
       const netWorthValue = computeNetWorth(holdingsData, rates)
 
@@ -94,6 +133,21 @@ export function usePortfolio(user) {
     } catch {}
   }, [user])
 
+  const fetchCryptoPricesBackground = useCallback(async (holdingsData) => {
+    const cryptoSymbols = holdingsData
+      .filter(h => h.asset_type === 'crypto' && h.input_mode === 'units' && h.asset_name)
+      .map(h => h.asset_name.toUpperCase().trim().replace(/^\$/, ''))
+    const unique = [...new Set(cryptoSymbols)]
+    if (!unique.length) return
+    try {
+      const prices = await fetchCryptoPrices(unique)
+      const updatedAt = new Date().toISOString()
+      saveCryptoCache(prices, updatedAt)
+      setCryptoPrices(prices)
+      setCryptoPricesUpdatedAt(updatedAt)
+    } catch {}
+  }, [])
+
   useEffect(() => { fetchData(false) }, [fetchData])
 
   const refreshRates = useCallback(async () => {
@@ -106,6 +160,16 @@ export function usePortfolio(user) {
     } catch {}
     setRefreshingRates(false)
   }, [user, settings])
+
+  const refreshCryptoPrices = useCallback(async () => {
+    setRefreshingCryptoPrices(true)
+    await fetchCryptoPricesBackground(holdings.map(h => ({
+      asset_type: h.asset_type,
+      input_mode: h.input_mode,
+      asset_name: h.asset_name,
+    })))
+    setRefreshingCryptoPrices(false)
+  }, [holdings, fetchCryptoPricesBackground])
 
   const addCurrencyRate = useCallback(async (code, rate) => {
     if (code === 'IDR') return
@@ -205,7 +269,7 @@ export function usePortfolio(user) {
     let netWorth = 0, gainLoss = 0, costBasisTotal = 0
     const allocationByType = {}
     const holdingsWithCalc = holdings.map(h => {
-      const calc = toIDR(h, exchangeRates)
+      const calc = toIDR(h, exchangeRates, cryptoPrices)
       netWorth += calc.currentValue
       gainLoss += calc.gainLoss
       costBasisTotal += calc.costBasis
@@ -221,7 +285,7 @@ export function usePortfolio(user) {
     const gainLossPct = costBasisTotal > 0 ? (gainLoss / costBasisTotal) * 100 : 0
     return { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdings, JSON.stringify(exchangeRates), JSON.stringify(settings.custom_asset_types)])
+  }, [holdings, JSON.stringify(exchangeRates), JSON.stringify(settings.custom_asset_types), JSON.stringify(cryptoPrices)])
 
   const { netWorth, gainLoss, gainLossPct, allocationByType, holdingsWithCalc } = derived
 
@@ -248,5 +312,9 @@ export function usePortfolio(user) {
     allocationByType,
     userId: user?.id,
     refetch: fetchData,
+    cryptoPrices,
+    cryptoPricesUpdatedAt,
+    refreshCryptoPrices,
+    refreshingCryptoPrices,
   }
 }

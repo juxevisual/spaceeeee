@@ -5,6 +5,7 @@ import { PlatformSection } from './PlatformSection'
 import { HoldingForm } from './HoldingForm'
 import { HoldingsControls } from './HoldingsControls'
 import { formatCompact, formatRelativeTime, ASSET_TYPE_LABELS } from '../../lib/format'
+import { downloadPortfolioReport } from '../../lib/portfolioReport'
 import { useCountUp } from '../../hooks/useCountUp'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 
@@ -62,6 +63,57 @@ function ExchangeRatesPanel({ holdings, exchangeRates, ratesUpdatedAt, onRefresh
   )
 }
 
+function CryptoPricesPanel({ holdings, cryptoPrices, cryptoPricesUpdatedAt, onRefresh, refreshing }) {
+  const cryptoHoldings = (holdings || []).filter(
+    h => h.asset_type === 'crypto' && h.input_mode === 'units' && h.asset_name
+  )
+  if (cryptoHoldings.length === 0) return null
+
+  const symbols = [...new Set(cryptoHoldings.map(h => h.asset_name.toUpperCase().trim()))]
+  const stale = cryptoPricesUpdatedAt && (Date.now() - new Date(cryptoPricesUpdatedAt).getTime() > 24 * 60 * 60 * 1000)
+
+  return (
+    <div className="border-t border-surface-100 dark:border-surface-800/60 pt-3 mt-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.60 0.21 310)' }}>Crypto prices</p>
+        <div className="flex items-center gap-2">
+          {cryptoPricesUpdatedAt && (
+            <span
+              className="text-[10px] text-surface-300 dark:text-surface-600"
+              style={stale ? { color: 'oklch(0.72 0.15 75)' } : {}}
+            >
+              {stale ? 'outdated' : formatRelativeTime(cryptoPricesUpdatedAt)}
+            </span>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="Refresh crypto prices"
+            className="p-1 rounded-md text-surface-400 dark:text-surface-500 hover:text-primary-500 dark:hover:text-primary-400 transition-colors disabled:opacity-40"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+              className={refreshing ? 'animate-spin' : ''} aria-hidden="true">
+              <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      {symbols.map(sym => (
+        <div key={sym} className="flex items-center justify-between py-0.5">
+          <span className="font-mono text-xs font-bold text-surface-500 dark:text-surface-400">{sym}</span>
+          <span className="text-xs tabular-nums text-surface-700 dark:text-surface-300">
+            {cryptoPrices[sym] !== undefined
+              ? `$${cryptoPrices[sym].toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+              : <span className="text-surface-300 dark:text-surface-600 text-[10px]">no price</span>
+            }
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function EyeIcon({ closed }) {
   return closed ? (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -77,7 +129,7 @@ function EyeIcon({ closed }) {
   )
 }
 
-export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onClose, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate }) {
+export function PortfolioDashboard({ holdings, settings, loading, error, netWorth, gainLoss, gainLossPct, allocationByType, onAdd, onEdit, onDelete, onClose, onUpdateUsdRate, customAssetTypes = [], onAddAssetType, userId, exchangeRates = {}, ratesUpdatedAt, onRefreshRates, refreshingRates, onAddCurrencyRate, cryptoPrices = {}, cryptoPricesUpdatedAt, refreshCryptoPrices, refreshingCryptoPrices }) {
   const [hideValues, setHideValues] = useState(() => localStorage.getItem('portfolio_private_mode') === 'true')
   const toggleHideValues = () => setHideValues(v => {
     const next = !v
@@ -280,6 +332,13 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
                     onRefresh={onRefreshRates}
                     refreshing={refreshingRates}
                   />
+                  <CryptoPricesPanel
+                    holdings={holdings}
+                    cryptoPrices={cryptoPrices}
+                    cryptoPricesUpdatedAt={cryptoPricesUpdatedAt}
+                    onRefresh={refreshCryptoPrices}
+                    refreshing={refreshingCryptoPrices}
+                  />
                 </>
               )}
             </div>
@@ -334,17 +393,32 @@ export function PortfolioDashboard({ holdings, settings, loading, error, netWort
         <div ref={holdingsRef}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.07em]" style={{ color: 'oklch(0.60 0.16 280)' }}>Holdings</h2>
-            <button
-              onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
-              className="group flex items-center gap-2 pl-4 pr-2 py-2 text-xs font-semibold rounded-full bg-primary-500 text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary-600 hover:shadow-[0_4px_16px_rgba(107,79,255,0.35)] active:scale-[0.97]"
-            >
-              <span className="hidden sm:inline">Add holding</span><span className="sm:hidden">Add</span>
-              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 group-hover:-translate-y-px transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </span>
-            </button>
+            <div className="flex items-center gap-2">
+              {holdings.length > 0 && (
+                <button
+                  onClick={() => downloadPortfolioReport({ holdings, netWorth, gainLoss, gainLossPct })}
+                  title="Download CSV report"
+                  className="p-2 rounded-full text-surface-400 dark:text-surface-500 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={() => { setDefaultPlatform(''); setEditTarget(null); setFormOpen(true) }}
+                className="group flex items-center gap-2 pl-4 pr-2 py-2 text-xs font-semibold rounded-full bg-primary-500 text-white transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary-600 hover:shadow-[0_4px_16px_rgba(107,79,255,0.35)] active:scale-[0.97]"
+              >
+                <span className="hidden sm:inline">Add holding</span><span className="sm:hidden">Add</span>
+                <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 group-hover:-translate-y-px transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
 
           {loading ? (

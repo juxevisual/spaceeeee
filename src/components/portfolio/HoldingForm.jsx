@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ASSET_QUANTITY_UNITS, getAllAssetTypes } from '../../lib/format'
 import { useToast } from '../shared/Toast'
 import { Dialog, useDialogClose } from '../shared/Dialog'
@@ -6,6 +6,7 @@ import { Icon } from '../shared/Icon'
 import { TypeCreator } from '../shared/TypeCreator'
 import { NumberInput } from '../shared/NumberInput'
 import { CurrencySelector } from '../shared/CurrencySelector'
+import { searchCoinCandidates, fetchPriceById, fetchCryptoPrices, getCoinOverrides, saveCoinOverride, normalizeSymbol } from '../../lib/cryptoPrices'
 
 const TYPE_THRESHOLD = 9
 const TYPE_SHOW = 6
@@ -57,11 +58,95 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
 
   const [form, setForm] = useState(() => buildFormState(initial))
   const [errors, setErrors] = useState({})
+  const [fetchingPrice, setFetchingPrice] = useState(false)
+  const [priceAutoFilled, setPriceAutoFilled] = useState(false)
+  const [coinCandidates, setCoinCandidates] = useState([])
+  const [selectedCoinId, setSelectedCoinId] = useState(null)
+  const priceUserEdited = useRef(false)
 
   useEffect(() => {
     setForm(buildFormState(initial))
     setErrors({})
+    setPriceAutoFilled(false)
+    setCoinCandidates([])
+    setSelectedCoinId(null)
+    priceUserEdited.current = false
   }, [initial])
+
+  // Auto-populate current price for crypto + units mode
+  useEffect(() => {
+    if (form.asset_type !== 'crypto' || form.input_mode !== 'units') {
+      setCoinCandidates([])
+      return
+    }
+    const sym = form.asset_name?.trim()
+    if (!sym) { setCoinCandidates([]); return }
+
+    const currency = form.currency
+    const usdRate = exchangeRates?.USD || 16000
+
+    const timer = setTimeout(async () => {
+      priceUserEdited.current = false
+      setFetchingPrice(true)
+      try {
+        // Check saved override first — skip picker if already disambiguated
+        const overrides = getCoinOverrides()
+        const pinnedId = overrides[sym.toUpperCase()]
+        if (pinnedId) {
+          const usdPrice = await fetchPriceById(pinnedId)
+          if (usdPrice !== null && !priceUserEdited.current) {
+            const price = currency === 'USD' ? usdPrice : Math.round(usdPrice * usdRate)
+            setForm(f => ({ ...f, current_price: String(price) }))
+            setPriceAutoFilled(true)
+            setSelectedCoinId(pinnedId)
+            setCoinCandidates([])
+          }
+        } else {
+          const candidates = await searchCoinCandidates(sym)
+          setCoinCandidates(candidates.length > 1 ? candidates : [])
+
+          if (candidates.length > 0) {
+            const usdPrice = await fetchPriceById(candidates[0].id)
+            if (usdPrice !== null && !priceUserEdited.current) {
+              const price = currency === 'USD' ? usdPrice : Math.round(usdPrice * usdRate)
+              setForm(f => ({ ...f, current_price: String(price) }))
+              setPriceAutoFilled(true)
+              setSelectedCoinId(candidates[0].id)
+            }
+          } else {
+            // Search found nothing — try markets route (covers top-500 + long-tail)
+            const prices = await fetchCryptoPrices([sym])
+            const usdPrice = prices[normalizeSymbol(sym)]
+            if (usdPrice !== undefined && !priceUserEdited.current) {
+              const price = currency === 'USD' ? usdPrice : Math.round(usdPrice * usdRate)
+              setForm(f => ({ ...f, current_price: String(price) }))
+              setPriceAutoFilled(true)
+            }
+          }
+        }
+      } catch {}
+      setFetchingPrice(false)
+    }, 700)
+
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.asset_name, form.asset_type, form.input_mode, form.currency])
+
+  const handleCoinSelect = async (coin) => {
+    setSelectedCoinId(coin.id)
+    saveCoinOverride(form.asset_name, coin.id)
+    setFetchingPrice(true)
+    priceUserEdited.current = false
+    try {
+      const usdPrice = await fetchPriceById(coin.id)
+      if (usdPrice !== null) {
+        const price = form.currency === 'USD' ? usdPrice : Math.round(usdPrice * (exchangeRates?.USD || 16000))
+        setForm(f => ({ ...f, current_price: String(price) }))
+        setPriceAutoFilled(true)
+      }
+    } catch {}
+    setFetchingPrice(false)
+  }
 
   // Auto-expand if the selected asset type is in the hidden section
   useEffect(() => {
@@ -204,6 +289,39 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
               onChange={e => set('asset_name', e.target.value)}
             />
             {errors.asset_name && <p className="text-xs text-loss mt-1" role="alert">{errors.asset_name}</p>}
+            {coinCandidates.length > 1 && (
+              <div className="mt-1.5 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+                <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.07em] text-surface-400 dark:text-surface-500">Multiple coins match — pick one</p>
+                {coinCandidates.map(coin => (
+                  <button
+                    key={coin.id}
+                    type="button"
+                    onClick={() => handleCoinSelect(coin)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                      selectedCoinId === coin.id
+                        ? 'bg-primary-50 dark:bg-primary-900/20'
+                        : 'hover:bg-surface-50 dark:hover:bg-surface-800/60'
+                    }`}
+                  >
+                    {coin.thumb
+                      ? <img src={coin.thumb} alt="" width={16} height={16} className="rounded-full flex-shrink-0" />
+                      : <span className="w-4 h-4 rounded-full bg-surface-200 dark:bg-surface-700 flex-shrink-0" />
+                    }
+                    <span className={`font-semibold ${selectedCoinId === coin.id ? 'text-primary-600 dark:text-primary-400' : 'text-surface-800 dark:text-surface-200'}`}>
+                      {coin.name}
+                    </span>
+                    {selectedCoinId === coin.id && (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="text-primary-500 ml-0.5" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    <span className="ml-auto text-[10px] text-surface-400 dark:text-surface-500 tabular-nums">
+                      {coin.market_cap_rank ? `#${coin.market_cap_rank}` : 'unranked'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -402,14 +520,29 @@ export function HoldingForm({ initial, onSubmit, onClose, loading, customAssetTy
               {errors.avg_buy_price && <p className="text-xs text-loss mt-1" role="alert">{errors.avg_buy_price}</p>}
             </div>
             <div>
-              <label htmlFor="hf-current-price" className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Current price</label>
+              <label htmlFor="hf-current-price" className="flex items-center gap-1.5 text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
+                Current price
+                {fetchingPrice && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin opacity-50" aria-hidden="true">
+                    <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                )}
+                {priceAutoFilled && !fetchingPrice && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'oklch(0.60 0.21 310 / 0.12)', color: 'oklch(0.60 0.21 310)' }}>live</span>
+                )}
+              </label>
               <NumberInput
                 id="hf-current-price"
                 allowDecimal
                 className={inputClass('current_price')}
                 placeholder="0"
                 value={form.current_price}
-                onChange={e => set('current_price', e.target.value)}
+                onChange={e => {
+                  priceUserEdited.current = true
+                  setPriceAutoFilled(false)
+                  set('current_price', e.target.value)
+                }}
               />
               {errors.current_price && <p className="text-xs text-loss mt-1" role="alert">{errors.current_price}</p>}
             </div>
