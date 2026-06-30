@@ -21,7 +21,8 @@ export function MonthReview({ expenses, familyExpenses, monthlyTotal, familyTota
     const prevMonth = month === 1 ? 12 : month - 1
     const prevYear = month === 1 ? year - 1 : year
     const startDate = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`
-    const endDate = new Date(prevYear, prevMonth, 0).toISOString().split('T')[0]
+    const lastDay = new Date(prevYear, prevMonth, 0).getDate()
+    const endDate = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
     supabase
       .from('expenses')
       .select('amount')

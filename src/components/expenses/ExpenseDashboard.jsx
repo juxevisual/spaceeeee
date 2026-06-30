@@ -15,6 +15,7 @@ import { useScrollReveal } from '../../hooks/useScrollReveal'
 import { supabase } from '../../lib/supabase'
 import { SpendingPace } from './SpendingPace'
 import { MonthReview } from './MonthReview'
+import { ExpenseExport } from './ExpenseExport'
 
 function TabBar({ active, onChange }) {
   return (
@@ -57,6 +58,7 @@ export function ExpenseDashboard({ user }) {
   const [tab, setTab] = useState('personal')
   const [formOpen, setFormOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
   const [userNames, setUserNames] = useState({})
@@ -174,6 +176,17 @@ export function ExpenseDashboard({ user }) {
         <div className="flex items-center justify-between sm:justify-end gap-2">
           <TabBar active={tab} onChange={setTab} />
           <button
+            onClick={() => setExportOpen(true)}
+            aria-label="Export expenses"
+            className="p-2 rounded-full text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+          <button
             onClick={() => { setEditTarget(null); setFormOpen(true) }}
             aria-label={`Add ${isFamily ? 'family' : 'personal'} expense`}
             style={{ backgroundColor: isFamily ? 'oklch(0.64 0.19 150)' : 'oklch(0.60 0.26 280)' }}
@@ -261,6 +274,19 @@ export function ExpenseDashboard({ user }) {
           />
         )}
       </div>
+
+      {exportOpen && (
+        <ExpenseExport
+          onClose={() => setExportOpen(false)}
+          month={month}
+          year={year}
+          expenses={expenses}
+          familyExpenses={familyExpenses}
+          tab={tab}
+          customCategories={customCategories}
+          user={user}
+        />
+      )}
 
       {reviewOpen && (
         <MonthReview

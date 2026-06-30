@@ -13,7 +13,8 @@ export function useExpenses(user, month, year) {
     setError(null)
     try {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+      const lastDay = new Date(year, month, 0).getDate()
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
       const [myRes, allRes] = await Promise.all([
         supabase
@@ -80,10 +81,11 @@ export function useExpenses(user, month, year) {
   const familyTotal = familyExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
 
   const monthOverMonth = async (months = 6) => {
-    const endDate = new Date(year, month - 1 + 1, 0)
-    const startDate = new Date(year, month - 1 - (months - 1), 1)
-    const start = startDate.toISOString().split('T')[0]
-    const end = endDate.toISOString().split('T')[0]
+    const endRaw = new Date(year, month - 1 + 1, 0)
+    const startRaw = new Date(year, month - 1 - (months - 1), 1)
+    const pad = n => String(n).padStart(2, '0')
+    const start = `${startRaw.getFullYear()}-${pad(startRaw.getMonth() + 1)}-01`
+    const end = `${endRaw.getFullYear()}-${pad(endRaw.getMonth() + 1)}-${pad(endRaw.getDate())}`
 
     const { data } = await supabase
       .from('expenses')

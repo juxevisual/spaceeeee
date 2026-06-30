@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { TogetherExport } from './TogetherExport'
 import { MonthPicker } from '../shared/MonthPicker'
 import { StatCard } from '../shared/StatCard'
 import { ComparisonChart } from './charts/ComparisonChart'
@@ -126,6 +127,7 @@ export function CombinedSummary({ user }) {
   const [myName, setMyName] = useState('Me')
   const [partners, setPartners] = useState([])
   const [selectedPartnerId, setSelectedPartnerId] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const { allExpenses, familyExpenses, familyTotal, loading, error, monthOverMonth } = useExpenses(user, month, year)
 
@@ -184,8 +186,19 @@ export function CombinedSummary({ user }) {
             )}
             <MonthPicker month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
           </div>
-          <div className="flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <PartnerPicker partners={partners} selectedId={selectedPartnerId} onSelect={setSelectedPartnerId} />
+            <button
+              onClick={() => setExportOpen(true)}
+              aria-label="Export together expenses"
+              className="p-2 rounded-full text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -280,6 +293,19 @@ export function CombinedSummary({ user }) {
           </ChartSection>
         </div>
       ) : null}
+
+      {exportOpen && (
+        <TogetherExport
+          onClose={() => setExportOpen(false)}
+          month={month}
+          year={year}
+          filteredExpenses={filteredExpenses}
+          familyExpenses={familyExpenses}
+          user={user}
+          selectedPartnerId={selectedPartnerId}
+          userNames={userNames}
+        />
+      )}
     </div>
   )
 }
