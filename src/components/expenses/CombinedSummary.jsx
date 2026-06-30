@@ -209,23 +209,27 @@ export function CombinedSummary({ user }) {
           {
             label: 'Combined personal',
             value: loading ? '—' : formatCompact(combinedTotal),
+            fullValue: loading ? undefined : formatIDR(combinedTotal),
             sub: familyTotal > 0 ? `+${formatCompact(familyTotal)} family` : undefined,
           },
           {
             label: myName,
             value: loading ? '—' : formatCompact(myTotal),
+            fullValue: loading ? undefined : formatIDR(myTotal),
             sub: combinedTotal > 0 ? `${((myTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
             labelStyle: { color: 'oklch(0.60 0.16 280)' },
           },
           {
             label: partnerName,
             value: loading ? '—' : formatCompact(partnerTotal),
+            fullValue: loading ? undefined : formatIDR(partnerTotal),
             sub: combinedTotal > 0 ? `${((partnerTotal / combinedTotal) * 100).toFixed(0)}% of personal` : undefined,
             labelStyle: { color: 'oklch(0.58 0.14 150)' },
           },
           {
             label: 'Family',
             value: loading ? '—' : (familyTotal > 0 ? formatCompact(familyTotal) : '—'),
+            fullValue: !loading && familyTotal > 0 ? formatIDR(familyTotal) : undefined,
             sub: !loading && familyTotal > 0 ? `${familyExpenses.length} item${familyExpenses.length !== 1 ? 's' : ''}` : undefined,
           },
         ].map((card) => (

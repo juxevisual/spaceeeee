@@ -1,4 +1,4 @@
-export function StatCard({ label, value, sub, trend, loading, labelStyle }) {
+export function StatCard({ label, value, fullValue, sub, trend, loading, labelStyle }) {
   if (loading) {
     return (
       <div className="animate-pulse">
@@ -15,6 +15,11 @@ export function StatCard({ label, value, sub, trend, loading, labelStyle }) {
       <p key={value} className="text-xl font-bold text-surface-900 dark:text-surface-100 tabular-nums tracking-[-0.01em] leading-tight stat-value-in">
         {value}
       </p>
+      {fullValue && (
+        <p className="text-[11px] font-medium text-surface-400 dark:text-surface-500 tabular-nums mt-1 leading-none">
+          {fullValue}
+        </p>
+      )}
       {sub && (
         <p className={`text-xs mt-1 font-medium leading-none ${
           trend === 'up' ? 'text-gain' :

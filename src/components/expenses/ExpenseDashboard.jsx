@@ -4,7 +4,7 @@ import { StatCard } from '../shared/StatCard'
 import { ExpenseTimeline } from './ExpenseTimeline'
 import { FamilyTimeline } from './FamilyTimeline'
 import { ExpenseForm } from './ExpenseForm'
-import { formatCompact, CATEGORY_LABELS, getAllCategories, nowJakarta } from '../../lib/format'
+import { formatCompact, formatIDR, CATEGORY_LABELS, getAllCategories, nowJakarta } from '../../lib/format'
 import { useToast } from '../shared/Toast'
 import { useExpenses } from '../../hooks/useExpenses'
 import { usePace } from '../../hooks/usePace'
@@ -209,6 +209,7 @@ export function ExpenseDashboard({ user }) {
             <StatCard
               label={isFamily ? 'Family total' : 'Personal total'}
               value={loading ? '—' : formatCompact(displayedTotal)}
+              fullValue={loading ? undefined : formatIDR(displayedTotal)}
               loading={loading}
             />
           </div>
